@@ -1,3 +1,5 @@
+import requests
+from bs4 import BeautifulSoup
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -19,9 +21,26 @@ df['market-cap'] = df['market-cap'].fillna(0)
 # Extract release year from release-date
 df['release-year'] = pd.to_datetime(df['release-date'], errors='coerce').dt.year.fillna(0).astype(int)
 
-# Generate PriceCharting URLs
+# Add Product URLs
 BASE_URL = "https://www.pricecharting.com/offers?product="
 df['product-url'] = df['id'].apply(lambda x: f"{BASE_URL}{x}")
+
+# Helper Function to Fetch Product Image
+@st.cache_data
+def fetch_product_image(product_url):
+    try:
+        response = requests.get(product_url, timeout=5)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            img_tag = soup.find('img', {'class': 'product-image'})  # Adjust class to match actual HTML structure
+            if img_tag and 'src' in img_tag.attrs:
+                return img_tag['src']
+    except Exception as e:
+        print(f"Error fetching image for {product_url}: {e}")
+    return None  # Return None if no image found or error occurs
+
+# Fetch Images and Add to DataFrame
+df['image-url'] = df['product-url'].apply(fetch_product_image)
 
 # Sidebar Filters
 st.sidebar.header("Filters")
@@ -114,15 +133,6 @@ st.title("PSA 10 Card Market Cap Dashboard")
 # Total Cards Metric
 st.metric("Total Cards", len(filtered_df))
 
-# Function to generate an HTML table with clickable links
-def render_table_with_links(df, columns, url_column):
-    table_html = df[columns + [url_column]].copy()
-    table_html[url_column] = table_html[url_column].apply(
-        lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>'
-    )
-    table_html = table_html.to_html(escape=False, index=False)
-    return table_html
-
 # Top Cards by Market Cap
 st.subheader("Top 20 Cards by Market Cap")
 top_market_cap = (
@@ -131,11 +141,16 @@ top_market_cap = (
     .reset_index(drop=True)
 )
 top_market_cap['Ranking'] = top_market_cap.index + 1
+top_market_cap['Image'] = top_market_cap['image-url'].apply(
+    lambda x: f'<img src="{x}" alt="Image" width="60">' if x else "No Image"
+)
 st.markdown(
-    render_table_with_links(
-        top_market_cap,
-        ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap'],
-        'product-url'
+    top_market_cap.to_html(
+        escape=False,
+        columns=[
+            'Ranking', 'product-name', 'console-name', 'loose-price', 
+            'psa-10-price', 'sales-volume', 'market-cap', 'Image'
+        ],
     ),
     unsafe_allow_html=True
 )
@@ -146,8 +161,7 @@ scatter_fig = px.scatter(
     filtered_df,
     x="loose-price",
     y="psa-10-price",
-    hover_name="product-name",
-    hover_data=["console-name", "product-url"],
+    hover_data=["product-name", "console-name"],
     title="Loose Price vs PSA 10 Graded Price",
     labels={"loose-price": "Loose Price ($)", "psa-10-price": "PSA 10 Price ($)"},
     template="plotly_white",
@@ -163,11 +177,16 @@ top_grading_profitability = (
     .reset_index(drop=True)
 )
 top_grading_profitability['Ranking'] = top_grading_profitability.index + 1
+top_grading_profitability['Image'] = top_grading_profitability['image-url'].apply(
+    lambda x: f'<img src="{x}" alt="Image" width="60">' if x else "No Image"
+)
 st.markdown(
-    render_table_with_links(
-        top_grading_profitability,
-        ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'grading-profitability'],
-        'product-url'
+    top_grading_profitability.to_html(
+        escape=False,
+        columns=[
+            'Ranking', 'product-name', 'console-name', 'loose-price', 
+            'psa-10-price', 'sales-volume', 'grading-profitability', 'Image'
+        ],
     ),
     unsafe_allow_html=True
 )
