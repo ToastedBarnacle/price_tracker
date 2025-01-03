@@ -125,9 +125,10 @@ st.dataframe(
             "loose-price": "Raw Price",
             "psa-10-price": "PSA 10 Price",
             "sales-volume": "Sales/Year",
-            "market-cap": "Market Cap"
+            "market-cap": "Market Cap",
+            "release-year": "Release Year"
         }
-    )[['Ranking', 'Card', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Market Cap']]
+    )[['Ranking', 'Card', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Market Cap', 'Release Year']]
 )
 
 # Scatterplot Visualization
@@ -161,7 +162,8 @@ st.dataframe(
             "loose-price": "Raw Price",
             "psa-10-price": "PSA 10 Price",
             "sales-volume": "Sales/Year",
-            "grading-profitability": "Grading Profitability"
+            "grading-profitability": "Grading Profitability",
+            "release-year": "Release Year"
         }
-    )[['Ranking', 'Card', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Grading Profitability']]
+    )[['Ranking', 'Card', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Grading Profitability', 'Release Year']]
 )
