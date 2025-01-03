@@ -7,11 +7,8 @@ DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
 df = pd.read_csv(DATA_FILE)
 
 # Ensure all necessary columns exist and compute missing ones dynamically
-df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
-df['grading-profitability'] = df['grading-profitability'].fillna(0)
-
-df['market-cap'] = pd.to_numeric(df['loose-price'], errors='coerce') * pd.to_numeric(df['sales-volume'], errors='coerce')
-df['market-cap'] = df['market-cap'].fillna(0)
+df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce').fillna(0) - pd.to_numeric(df['loose-price'], errors='coerce').fillna(0)
+df['market-cap'] = pd.to_numeric(df['loose-price'], errors='coerce').fillna(0) * pd.to_numeric(df['sales-volume'], errors='coerce').fillna(0)
 
 # Sidebar Filters
 st.sidebar.header("Filters")
@@ -71,14 +68,19 @@ min_sales = st.sidebar.number_input(
 )
 
 # Apply filters
-filtered_df = df[
-    (df['psa-10-price'] >= min_psa_price) &
-    (df['psa-10-price'] <= max_psa_price) &
-    (df['loose-price'] >= min_loose_price) &
-    (df['loose-price'] <= max_loose_price) &
-    (df['grading-profitability'] >= min_grading_profitability) &
-    (df['sales-volume'] >= min_sales)
+filtered_df = df.copy()
+filtered_df = filtered_df[
+    (filtered_df['psa-10-price'] >= min_psa_price) &
+    (filtered_df['psa-10-price'] <= max_psa_price) &
+    (filtered_df['loose-price'] >= min_loose_price) &
+    (filtered_df['loose-price'] <= max_loose_price) &
+    (filtered_df['grading-profitability'] >= min_grading_profitability) &
+    (filtered_df['sales-volume'] >= min_sales)
 ]
+
+# Debugging filtered data
+st.sidebar.markdown("### Debug: Filtered Data")
+st.sidebar.write(filtered_df)
 
 # Add ranks for the tables
 filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
@@ -87,7 +89,7 @@ filtered_df['Rank Grading'] = filtered_df['grading-profitability'].rank(ascendin
 # Format price and market cap columns
 price_columns = ['psa-10-price', 'loose-price', 'grading-profitability', 'market-cap']
 for col in price_columns:
-    filtered_df[col] = filtered_df[col].apply(lambda x: f"${x:,.2f}" if x != "N/A" else "N/A")
+    filtered_df[col] = filtered_df[col].apply(lambda x: f"${x:,.2f}" if pd.notnull(x) else "N/A")
 
 # Main Dashboard
 st.title("PSA Card Market Cap Dashboard")
