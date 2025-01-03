@@ -13,6 +13,11 @@ df['market-cap'] = pd.to_numeric(df['loose-price'], errors='coerce').fillna(0) *
 # Sidebar Filters
 st.sidebar.header("Filters")
 
+# Debugging: Show all column names and the first few rows of the dataframe
+st.sidebar.subheader("Debug Data")
+st.sidebar.write("Available columns in the dataframe:", list(df.columns))
+st.sidebar.write("First few rows of the dataframe:", df.head())
+
 # Minimum and maximum PSA 10 price filter
 st.sidebar.markdown("### PSA 10 Price ($)")
 min_psa_price = st.sidebar.number_input(
@@ -76,6 +81,10 @@ filtered_df = df[
     (df['grading-profitability'] >= min_grading_profitability) &
     (df['sales-volume'] >= min_sales)
 ]
+
+# Debugging: Show filtered data
+st.sidebar.subheader("Filtered Data Preview")
+st.sidebar.write(filtered_df)
 
 # Add ranks for the tables
 filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
@@ -150,3 +159,4 @@ st.dataframe(
         }
     )[['Ranking', 'Card', 'Raw Price', "PSA 10 Price", 'Sales/Year', 'Grading Profitability']]
 )
+
