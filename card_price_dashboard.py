@@ -13,6 +13,10 @@ df['grading-profitability'] = df['grading-profitability'].fillna(0)
 df['market-cap'] = pd.to_numeric(df['loose-price'], errors='coerce') * pd.to_numeric(df['sales-volume'], errors='coerce')
 df['market-cap'] = df['market-cap'].fillna(0)
 
+# Debugging: Output column names
+st.sidebar.markdown("### Debug: Available columns in the DataFrame")
+st.sidebar.write(list(df.columns))
+
 # Sidebar Filters
 st.sidebar.header("Filters")
 
