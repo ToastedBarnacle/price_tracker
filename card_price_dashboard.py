@@ -90,7 +90,7 @@ for col in price_columns:
     filtered_df[col] = filtered_df[col].apply(lambda x: f"${x:,.2f}" if x != "N/A" else "N/A")
 
 # Main Dashboard
-st.title("PSA Card Market Cap Dashboard")
+st.title("PSA Card Market Cap Dashboard")  # Updated Title
 
 # Total Cards Metric
 st.header("Total Cards Included in Filter Selections")
@@ -105,7 +105,7 @@ top_market_cap = (
 )
 top_market_cap['Ranking'] = top_market_cap.index + 1
 st.subheader("Top 20 Cards by Market Cap")
-st.dataframe(
+st.table(
     top_market_cap.rename(
         columns={
             "Ranking": "Ranking",
@@ -141,7 +141,7 @@ top_grading_profitability = (
     .reset_index(drop=True)
 )
 top_grading_profitability['Ranking'] = top_grading_profitability.index + 1
-st.dataframe(
+st.table(
     top_grading_profitability.rename(
         columns={
             "Ranking": "Ranking",
