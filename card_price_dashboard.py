@@ -108,7 +108,6 @@ filtered_df['Rank Grading'] = filtered_df['grading-profitability'].rank(ascendin
 st.title("PSA 10 Card Market Cap Dashboard")
 
 # Total Cards Metric
-st.header("Total Cards Included in Filter Selections")
 st.metric("Total Cards", len(filtered_df))
 
 # Top Cards by Market Cap
