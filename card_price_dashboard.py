@@ -6,17 +6,24 @@ import plotly.express as px
 DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
 df = pd.read_csv(DATA_FILE)
 
-# Replace missing or invalid data with "N/A"
-df = df.fillna("N/A")
+# Debug: Display available columns
+st.write("Available columns in the dataframe:", df.columns.tolist())
 
-# Convert numeric columns to "N/A" if invalid (non-numeric values)
-numeric_columns = ['psa-10-price', 'loose-price', 'grading-profitability', 'sales-volume', 'market-cap']
-for col in numeric_columns:
-    df[col] = pd.to_numeric(df[col], errors='coerce').fillna("N/A")
+# Ensure all necessary columns exist and compute missing ones
+if 'psa-10-price' not in df.columns:
+    df['psa-10-price'] = "N/A"
 
-# Calculate grading profitability and market capitalization for valid rows
+if 'loose-price' not in df.columns:
+    df['loose-price'] = "N/A"
+
+if 'sales-volume' not in df.columns:
+    df['sales-volume'] = "N/A"
+
+# Calculate grading profitability
 df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
 df['grading-profitability'] = df['grading-profitability'].fillna("N/A")
+
+# Calculate market capitalization
 df['market-cap'] = pd.to_numeric(df['loose-price'], errors='coerce') * pd.to_numeric(df['sales-volume'], errors='coerce')
 df['market-cap'] = df['market-cap'].fillna("N/A")
 
@@ -79,15 +86,17 @@ min_sales = st.sidebar.number_input(
 
 # Apply filters
 filtered_df = df[
-    (df['psa-10-price'] != "N/A") & (df['loose-price'] != "N/A") &
-    (df['grading-profitability'] != "N/A") & (df['sales-volume'] != "N/A") &
-    (pd.to_numeric(df['psa-10-price']) >= min_psa_price) &
-    (pd.to_numeric(df['psa-10-price']) <= max_psa_price) &
-    (pd.to_numeric(df['loose-price']) >= min_loose_price) &
-    (pd.to_numeric(df['loose-price']) <= max_loose_price) &
-    (pd.to_numeric(df['grading-profitability']) >= min_grading_profitability) &
-    (pd.to_numeric(df['sales-volume']) >= min_sales)
+    (pd.to_numeric(df['psa-10-price'], errors='coerce') >= min_psa_price) &
+    (pd.to_numeric(df['psa-10-price'], errors='coerce') <= max_psa_price) &
+    (pd.to_numeric(df['loose-price'], errors='coerce') >= min_loose_price) &
+    (pd.to_numeric(df['loose-price'], errors='coerce') <= max_loose_price) &
+    (pd.to_numeric(df['grading-profitability'], errors='coerce') >= min_grading_profitability) &
+    (pd.to_numeric(df['sales-volume'], errors='coerce') >= min_sales)
 ]
+
+# Add rank to the tables
+filtered_df['rank-grading'] = filtered_df['grading-profitability'].rank(ascending=False)
+filtered_df['rank-market'] = filtered_df['market-cap'].rank(ascending=False)
 
 # Main Dashboard
 st.title("Card Price Tracker Dashboard")
