@@ -19,6 +19,10 @@ df['market-cap'] = df['market-cap'].fillna(0)
 # Extract release year from release-date
 df['release-year'] = pd.to_datetime(df['release-date'], errors='coerce').dt.year.fillna(0).astype(int)
 
+# Generate PriceCharting URLs
+BASE_URL = "https://www.pricecharting.com/offers?product="
+df['product-url'] = df['id'].apply(lambda x: f"{BASE_URL}{x}")
+
 # Sidebar Filters
 st.sidebar.header("Filters")
 
@@ -127,9 +131,12 @@ st.dataframe(
             "loose-price": "Raw Price",
             "psa-10-price": "PSA 10 Price",
             "sales-volume": "Sales/Year",
-            "market-cap": "Market Cap"
+            "market-cap": "Market Cap",
+            "product-url": "View on PriceCharting"
         }
-    )[['Ranking', 'Card', 'Set', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Market Cap']]
+    ).assign(**{
+        "View on PriceCharting": top_market_cap['product-url'].apply(lambda x: f"[View on PriceCharting]({x})")
+    })[['Ranking', 'Card', 'Set', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Market Cap', 'View on PriceCharting']]
 )
 
 # Scatterplot Visualization
@@ -138,8 +145,8 @@ scatter_fig = px.scatter(
     filtered_df,
     x="loose-price",
     y="psa-10-price",
-    hover_data=["console-name"],  # Add console name (Set) to hover data
     hover_name="product-name",
+    hover_data=["console-name", "product-url"],
     title="Loose Price vs PSA 10 Graded Price",
     labels={"loose-price": "Loose Price ($)", "psa-10-price": "PSA 10 Price ($)"},
     template="plotly_white",
@@ -164,7 +171,10 @@ st.dataframe(
             "loose-price": "Raw Price",
             "psa-10-price": "PSA 10 Price",
             "sales-volume": "Sales/Year",
-            "grading-profitability": "Grading Profitability"
+            "grading-profitability": "Grading Profitability",
+            "product-url": "View on PriceCharting"
         }
-    )[['Ranking', 'Card', 'Set', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Grading Profitability']]
+    ).assign(**{
+        "View on PriceCharting": top_grading_profitability['product-url'].apply(lambda x: f"[View on PriceCharting]({x})")
+    })[['Ranking', 'Card', 'Set', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Grading Profitability', 'View on PriceCharting']]
 )
