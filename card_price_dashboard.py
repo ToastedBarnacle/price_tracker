@@ -80,12 +80,29 @@ filtered_df = df[
 # Main Dashboard
 st.title("Card Price Tracker Dashboard")
 
-# Display Metrics
-st.header("Summary Metrics")
+# Total Cards Metric
+st.header("Total Cards Included in Filter Selections")
 st.metric("Total Cards", len(filtered_df))
 
+# Top 20 Cards by Market Cap
+st.header("Top 20 Cards by Market Cap")
+top_market_cap = (
+    filtered_df.sort_values(by="market-cap", ascending=False)
+    .head(20)
+    .reset_index(drop=True)
+)
+top_market_cap['Rank'] = top_market_cap.index + 1
+st.dataframe(
+    top_market_cap[['Rank', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap']],
+    width=900,
+    height=300
+)
+
+# Grading Profitability Section
+st.header("Grading Profitability Data")
+
 # Scatterplot Visualization
-st.header("Loose Price vs PSA 10 Graded Price")
+st.subheader("Loose Price vs PSA 10 Graded Price")
 scatter_fig = px.scatter(
     filtered_df,
     x="loose-price",
@@ -100,18 +117,16 @@ scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
 # Show scatterplot
 st.plotly_chart(scatter_fig, use_container_width=True)
 
-# Sorting Table: Top 20 Products by Grading Profitability
-st.header("Top 20 Products by Grading Profitability")
+# Top 20 Most Profitable Grading Cards
+st.subheader("Top 20 Most Profitable Grading Cards")
 top_grading_profitability = (
     filtered_df.sort_values(by="grading-profitability", ascending=False)
     .head(20)
+    .reset_index(drop=True)
 )
-st.dataframe(top_grading_profitability[['product-name', 'grading-profitability', 'psa-10-price', 'loose-price', 'sales-volume']])
-
-# Sorting Table: Top 20 Cards by Market Capitalization
-st.header("Top 20 Cards by Market Capitalization")
-top_market_cap = (
-    filtered_df.sort_values(by="market-cap", ascending=False)
-    .head(20)
+top_grading_profitability['Rank'] = top_grading_profitability.index + 1
+st.dataframe(
+    top_grading_profitability[['Rank', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume']],
+    width=900,
+    height=300
 )
-st.dataframe(top_market_cap[['product-name', 'market-cap', 'loose-price', 'sales-volume']])
