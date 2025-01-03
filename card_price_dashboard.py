@@ -10,7 +10,7 @@ df = pd.read_csv(DATA_FILE)
 # Calculate grading profitability
 df['grading-profitability'] = df['psa-10-price'] - df['loose-price']
 
-# Helper function for log-scaled sliders with proper dollar formatting
+# Helper function for log-scaled sliders with dollar formatting
 def log_slider(label, min_value, max_value, default_value):
     min_log = np.log10(min_value + 1)  # Add 1 to avoid log(0)
     max_log = np.log10(max_value + 1)
@@ -22,10 +22,10 @@ def log_slider(label, min_value, max_value, default_value):
         min_value=min_log,
         max_value=max_log,
         value=default_log,
-        format="%.2f",  # Format is still logarithmic here
+        format=None  # Prevent raw formatting in the slider
     )
 
-    # Convert back to linear space for use in filters
+    # Convert back to linear space for both filter use and display
     linear_value = 10 ** log_value - 1
     return linear_value
 
@@ -78,10 +78,10 @@ min_sales = st.sidebar.slider(
     value=0
 )
 
-# Sidebar Ranges (formatted)
+# Sidebar Ranges (formatted for display)
 st.sidebar.markdown("### Filter Ranges")
-st.sidebar.markdown(f"PSA 10 Price: ${min_psa_price:.2f} - ${max_psa_price:.2f}")
-st.sidebar.markdown(f"Loose Price: ${min_loose_price:.2f} - ${max_loose_price:.2f}")
+st.sidebar.markdown(f"PSA 10 Price Range: ${min_psa_price:.2f} - ${max_psa_price:.2f}")
+st.sidebar.markdown(f"Loose Price Range: ${min_loose_price:.2f} - ${max_loose_price:.2f}")
 st.sidebar.markdown(f"Grading Profitability: ${min_grading_profitability:.2f}+")
 
 # Apply filters
