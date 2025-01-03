@@ -68,19 +68,14 @@ min_sales = st.sidebar.number_input(
 )
 
 # Apply filters
-filtered_df = df.copy()
-filtered_df = filtered_df[
-    (filtered_df['psa-10-price'] >= min_psa_price) &
-    (filtered_df['psa-10-price'] <= max_psa_price) &
-    (filtered_df['loose-price'] >= min_loose_price) &
-    (filtered_df['loose-price'] <= max_loose_price) &
-    (filtered_df['grading-profitability'] >= min_grading_profitability) &
-    (filtered_df['sales-volume'] >= min_sales)
+filtered_df = df[
+    (df['psa-10-price'] >= min_psa_price) &
+    (df['psa-10-price'] <= max_psa_price) &
+    (df['loose-price'] >= min_loose_price) &
+    (df['loose-price'] <= max_loose_price) &
+    (df['grading-profitability'] >= min_grading_profitability) &
+    (df['sales-volume'] >= min_sales)
 ]
-
-# Debugging filtered data
-st.sidebar.markdown("### Debug: Filtered Data")
-st.sidebar.write(filtered_df)
 
 # Add ranks for the tables
 filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
@@ -153,5 +148,5 @@ st.dataframe(
             "sales-volume": "Sales/Year",
             "grading-profitability": "Grading Profitability"
         }
-    )[['Ranking', 'Card', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Grading Profitability']]
+    )[['Ranking', 'Card', 'Raw Price', "PSA 10 Price", 'Sales/Year', 'Grading Profitability']]
 )
