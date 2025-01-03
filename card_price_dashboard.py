@@ -111,7 +111,6 @@ st.title("PSA 10 Card Market Cap Dashboard")
 st.metric("Total Cards", len(filtered_df))
 
 # Top Cards by Market Cap
-st.header("Top Cards by Market Cap")
 top_market_cap = (
     filtered_df.sort_values(by="market-cap", ascending=False)
     .head(20)
@@ -133,7 +132,6 @@ st.dataframe(
 )
 
 # Scatterplot Visualization
-st.header("Grading Profitability Data")
 st.subheader("Loose Price vs PSA 10 Graded Price")
 scatter_fig = px.scatter(
     filtered_df,
