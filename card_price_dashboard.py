@@ -6,9 +6,19 @@ import plotly.express as px
 DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
 df = pd.read_csv(DATA_FILE)
 
-# Calculate grading profitability and market capitalization
-df['grading-profitability'] = df['psa-10-price'] - df['loose-price']
-df['market-cap'] = df['loose-price'] * df['sales-volume']
+# Replace missing or invalid data with "N/A"
+df = df.fillna("N/A")
+
+# Convert numeric columns to "N/A" if invalid (non-numeric values)
+numeric_columns = ['psa-10-price', 'loose-price', 'grading-profitability', 'sales-volume', 'market-cap']
+for col in numeric_columns:
+    df[col] = pd.to_numeric(df[col], errors='coerce').fillna("N/A")
+
+# Calculate grading profitability and market capitalization for valid rows
+df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
+df['grading-profitability'] = df['grading-profitability'].fillna("N/A")
+df['market-cap'] = pd.to_numeric(df['loose-price'], errors='coerce') * pd.to_numeric(df['sales-volume'], errors='coerce')
+df['market-cap'] = df['market-cap'].fillna("N/A")
 
 # Sidebar Filters
 st.sidebar.header("Filters")
@@ -18,15 +28,15 @@ st.sidebar.markdown("### PSA 10 Price ($)")
 min_psa_price = st.sidebar.number_input(
     "Minimum PSA 10 Price ($)", 
     min_value=0.0, 
-    max_value=float(df['psa-10-price'].max()), 
-    value=float(df['psa-10-price'].min()), 
+    max_value=float(df[df['psa-10-price'] != "N/A"]['psa-10-price'].max() if "N/A" not in df['psa-10-price'].unique() else 0), 
+    value=float(df[df['psa-10-price'] != "N/A"]['psa-10-price'].min() if "N/A" not in df['psa-10-price'].unique() else 0), 
     step=1.0
 )
 max_psa_price = st.sidebar.number_input(
     "Maximum PSA 10 Price ($)", 
     min_value=0.0, 
-    max_value=float(df['psa-10-price'].max()), 
-    value=float(df['psa-10-price'].max()), 
+    max_value=float(df[df['psa-10-price'] != "N/A"]['psa-10-price'].max() if "N/A" not in df['psa-10-price'].unique() else 0), 
+    value=float(df[df['psa-10-price'] != "N/A"]['psa-10-price'].max() if "N/A" not in df['psa-10-price'].unique() else 0), 
     step=1.0
 )
 
@@ -35,15 +45,15 @@ st.sidebar.markdown("### Loose Price ($)")
 min_loose_price = st.sidebar.number_input(
     "Minimum Loose Price ($)", 
     min_value=0.0, 
-    max_value=float(df['loose-price'].max()), 
-    value=float(df['loose-price'].min()), 
+    max_value=float(df[df['loose-price'] != "N/A"]['loose-price'].max() if "N/A" not in df['loose-price'].unique() else 0), 
+    value=float(df[df['loose-price'] != "N/A"]['loose-price'].min() if "N/A" not in df['loose-price'].unique() else 0), 
     step=1.0
 )
 max_loose_price = st.sidebar.number_input(
     "Maximum Loose Price ($)", 
     min_value=0.0, 
-    max_value=float(df['loose-price'].max()), 
-    value=float(df['loose-price'].max()), 
+    max_value=float(df[df['loose-price'] != "N/A"]['loose-price'].max() if "N/A" not in df['loose-price'].unique() else 0), 
+    value=float(df[df['loose-price'] != "N/A"]['loose-price'].max() if "N/A" not in df['loose-price'].unique() else 0), 
     step=1.0
 )
 
@@ -52,8 +62,8 @@ st.sidebar.markdown("### Grading Profitability ($)")
 min_grading_profitability = st.sidebar.number_input(
     "Minimum Grading Profitability ($)", 
     min_value=0.0, 
-    max_value=float(df['grading-profitability'].max()), 
-    value=float(df['grading-profitability'].min()), 
+    max_value=float(df[df['grading-profitability'] != "N/A"]['grading-profitability'].max() if "N/A" not in df['grading-profitability'].unique() else 0), 
+    value=float(df[df['grading-profitability'] != "N/A"]['grading-profitability'].min() if "N/A" not in df['grading-profitability'].unique() else 0), 
     step=1.0
 )
 
@@ -62,19 +72,21 @@ st.sidebar.markdown("### Sales Volume")
 min_sales = st.sidebar.number_input(
     "Minimum Sales Volume",
     min_value=0,
-    max_value=int(df['sales-volume'].max()),
+    max_value=int(df[df['sales-volume'] != "N/A"]['sales-volume'].max() if "N/A" not in df['sales-volume'].unique() else 0),
     value=0,
     step=1
 )
 
 # Apply filters
 filtered_df = df[
-    (df['psa-10-price'] >= min_psa_price) &
-    (df['psa-10-price'] <= max_psa_price) &
-    (df['loose-price'] >= min_loose_price) &
-    (df['loose-price'] <= max_loose_price) &
-    (df['grading-profitability'] >= min_grading_profitability) &
-    (df['sales-volume'] >= min_sales)
+    (df['psa-10-price'] != "N/A") & (df['loose-price'] != "N/A") &
+    (df['grading-profitability'] != "N/A") & (df['sales-volume'] != "N/A") &
+    (pd.to_numeric(df['psa-10-price']) >= min_psa_price) &
+    (pd.to_numeric(df['psa-10-price']) <= max_psa_price) &
+    (pd.to_numeric(df['loose-price']) >= min_loose_price) &
+    (pd.to_numeric(df['loose-price']) <= max_loose_price) &
+    (pd.to_numeric(df['grading-profitability']) >= min_grading_profitability) &
+    (pd.to_numeric(df['sales-volume']) >= min_sales)
 ]
 
 # Main Dashboard
@@ -84,49 +96,6 @@ st.title("Card Price Tracker Dashboard")
 st.header("Total Cards Included in Filter Selections")
 st.metric("Total Cards", len(filtered_df))
 
-# Top 20 Cards by Market Cap
-st.header("Top 20 Cards by Market Cap")
-top_market_cap = (
-    filtered_df.sort_values(by="market-cap", ascending=False)
-    .head(20)
-    .reset_index(drop=True)
-)
-top_market_cap['Rank'] = top_market_cap.index + 1
-st.dataframe(
-    top_market_cap[['Rank', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap']],
-    width=900,
-    height=300
-)
-
-# Grading Profitability Section
-st.header("Grading Profitability Data")
-
-# Scatterplot Visualization
-st.subheader("Loose Price vs PSA 10 Graded Price")
-scatter_fig = px.scatter(
-    filtered_df,
-    x="loose-price",
-    y="psa-10-price",
-    hover_name="product-name",  # Shows card name on hover
-    title="Loose Price vs PSA 10 Graded Price",
-    labels={"loose-price": "Loose Price ($)", "psa-10-price": "PSA 10 Price ($)"},
-    template="plotly_white",
-)
-scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
-
-# Show scatterplot
-st.plotly_chart(scatter_fig, use_container_width=True)
-
-# Top 20 Most Profitable Grading Cards
-st.subheader("Top 20 Most Profitable Grading Cards")
-top_grading_profitability = (
-    filtered_df.sort_values(by="grading-profitability", ascending=False)
-    .head(20)
-    .reset_index(drop=True)
-)
-top_grading_profitability['Rank'] = top_grading_profitability.index + 1
-st.dataframe(
-    top_grading_profitability[['Rank', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume']],
-    width=900,
-    height=300
-)
+# Display Filtered Table
+st.header("Filtered Card Data")
+st.dataframe(filtered_df[['product-name', 'psa-10-price', 'loose-price', 'grading-profitability', 'sales-volume', 'market-cap']])
