@@ -3,3 +3,4 @@ matplotlib
 streamlit
 plotly
 beautifulsoup4
+requests
