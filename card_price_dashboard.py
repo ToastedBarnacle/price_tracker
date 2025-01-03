@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+# Set page title
+st.set_page_config(page_title="PSA 10 Card Market Cap Dashboard")
+
 # Load the data
 DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
 df = pd.read_csv(DATA_FILE)
@@ -102,7 +105,7 @@ filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method=
 filtered_df['Rank Grading'] = filtered_df['grading-profitability'].rank(ascending=False, method="dense")
 
 # Main Dashboard
-st.title("Card Price Tracker Dashboard")
+st.title("PSA 10 Card Market Cap Dashboard")
 
 # Total Cards Metric
 st.header("Total Cards Included in Filter Selections")
@@ -128,7 +131,7 @@ st.dataframe(
             "market-cap": "Market Cap",
             "release-year": "Release Year"
         }
-    )[['Ranking', 'Card', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Market Cap', 'Release Year']]
+    ).style.format({"Release Year": lambda x: str(x)})  # Ensures no commas in release year
 )
 
 # Scatterplot Visualization
@@ -165,5 +168,5 @@ st.dataframe(
             "grading-profitability": "Grading Profitability",
             "release-year": "Release Year"
         }
-    )[['Ranking', 'Card', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Grading Profitability', 'Release Year']]
+    ).style.format({"Release Year": lambda x: str(x)})  # Ensures no commas in release year
 )
