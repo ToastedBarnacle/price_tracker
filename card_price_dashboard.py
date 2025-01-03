@@ -10,29 +10,31 @@ df = pd.read_csv(DATA_FILE)
 # Calculate grading profitability
 df['grading-profitability'] = df['psa-10-price'] - df['loose-price']
 
-# Helper function for log-scaled sliders with dollar formatting
+# Helper function for a log-scaled slider with proper dollar formatting
 def log_slider(label, min_value, max_value, default_value):
+    # Convert dollar values to log space
     min_log = np.log10(min_value + 1)  # Add 1 to avoid log(0)
     max_log = np.log10(max_value + 1)
     default_log = np.log10(default_value + 1)
 
-    # Slider for logarithmic scaling
+    # Slider for logarithmic scaling (log space internally)
     log_value = st.sidebar.slider(
         label,
         min_value=min_log,
         max_value=max_log,
         value=default_log,
-        format=None  # Prevent raw formatting in the slider
+        format=None  # Disable default formatting
     )
 
-    # Convert back to linear space for both filter use and display
+    # Convert the logarithmic value back to linear space
     linear_value = 10 ** log_value - 1
-    return linear_value
+    # Display the correct dollar format above the slider
+    return round(linear_value, 2)
 
 # Sidebar Filters
 st.sidebar.header("Filters")
 
-# Minimum and maximum PSA 10 price filter (log scale)
+# Minimum and maximum PSA 10 price filter
 min_psa_price = log_slider(
     "Minimum PSA 10 Price ($)", 
     min_value=float(df['psa-10-price'].min()), 
@@ -47,7 +49,7 @@ max_psa_price = log_slider(
     default_value=float(df['psa-10-price'].max())
 )
 
-# Minimum and maximum loose price filter (log scale)
+# Minimum and maximum loose price filter
 min_loose_price = log_slider(
     "Minimum Loose Price ($)", 
     min_value=float(df['loose-price'].min()), 
@@ -62,7 +64,7 @@ max_loose_price = log_slider(
     default_value=float(df['loose-price'].max())
 )
 
-# Minimum grading profitability filter (log scale)
+# Minimum grading profitability filter
 min_grading_profitability = log_slider(
     "Minimum Grading Profitability ($)", 
     min_value=float(df['grading-profitability'].min()), 
