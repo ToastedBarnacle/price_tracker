@@ -81,8 +81,8 @@ filtered_df = df[
 ]
 
 # Add ranks for the tables
-filtered_df['rank-market-cap'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
-filtered_df['rank-grading'] = filtered_df['grading-profitability'].rank(ascending=False, method="dense")
+filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
+filtered_df['Rank Grading'] = filtered_df['grading-profitability'].rank(ascending=False, method="dense")
 
 # Main Dashboard
 st.title("Card Price Tracker Dashboard")
@@ -98,12 +98,19 @@ top_market_cap = (
     .head(20)
     .reset_index(drop=True)
 )
-top_market_cap['Rank'] = top_market_cap.index + 1
+top_market_cap['Ranking'] = top_market_cap.index + 1
 st.subheader("Top 20 Cards by Market Cap")
-st.dataframe(
-    top_market_cap[['Rank', 'product-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap']],
-    width=900,
-    height=400
+st.table(
+    top_market_cap.rename(
+        columns={
+            "Ranking": "Ranking",
+            "product-name": "Card",
+            "loose-price": "Raw Price",
+            "psa-10-price": "PSA 10 Price",
+            "sales-volume": "Sales/Year",
+            "market-cap": "Market Cap"
+        }
+    )[['Ranking', 'Card', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Market Cap']]
 )
 
 # Scatterplot Visualization
@@ -128,9 +135,16 @@ top_grading_profitability = (
     .head(20)
     .reset_index(drop=True)
 )
-top_grading_profitability['Rank'] = top_grading_profitability.index + 1
-st.dataframe(
-    top_grading_profitability[['Rank', 'product-name', 'loose-price', 'psa-10-price', 'sales-volume', 'grading-profitability']],
-    width=900,
-    height=400
+top_grading_profitability['Ranking'] = top_grading_profitability.index + 1
+st.table(
+    top_grading_profitability.rename(
+        columns={
+            "Ranking": "Ranking",
+            "product-name": "Card",
+            "loose-price": "Raw Price",
+            "psa-10-price": "PSA 10 Price",
+            "sales-volume": "Sales/Year",
+            "grading-profitability": "Grading Profitability"
+        }
+    )[['Ranking', 'Card', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Grading Profitability']]
 )
