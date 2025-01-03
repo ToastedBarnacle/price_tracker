@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import numpy as np
 
 # Load the data
 DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
@@ -10,81 +9,59 @@ df = pd.read_csv(DATA_FILE)
 # Calculate grading profitability
 df['grading-profitability'] = df['psa-10-price'] - df['loose-price']
 
-# Helper function for a log-scaled slider with proper dollar formatting
-def log_slider(label, min_value, max_value, default_value):
-    # Convert dollar values to log space
-    min_log = np.log10(min_value + 1)  # Add 1 to avoid log(0)
-    max_log = np.log10(max_value + 1)
-    default_log = np.log10(default_value + 1)
-
-    # Slider for logarithmic scaling (log space internally)
-    log_value = st.sidebar.slider(
-        label,
-        min_value=min_log,
-        max_value=max_log,
-        value=default_log,
-        format=None  # Disable default formatting
-    )
-
-    # Convert the logarithmic value back to linear space
-    linear_value = 10 ** log_value - 1
-    # Display the correct dollar format above the slider
-    return round(linear_value, 2)
-
 # Sidebar Filters
 st.sidebar.header("Filters")
 
 # Minimum and maximum PSA 10 price filter
-min_psa_price = log_slider(
-    "Minimum PSA 10 Price ($)", 
-    min_value=float(df['psa-10-price'].min()), 
-    max_value=float(df['psa-10-price'].max()), 
-    default_value=float(df['psa-10-price'].min())
+min_psa_price = st.sidebar.slider(
+    "Minimum PSA 10 Price ($)",
+    min_value=float(df['psa-10-price'].min()),
+    max_value=float(df['psa-10-price'].max()),
+    value=float(df['psa-10-price'].min()),
+    format="$%.2f"
 )
 
-max_psa_price = log_slider(
-    "Maximum PSA 10 Price ($)", 
-    min_value=float(df['psa-10-price'].min()), 
-    max_value=float(df['psa-10-price'].max()), 
-    default_value=float(df['psa-10-price'].max())
+max_psa_price = st.sidebar.slider(
+    "Maximum PSA 10 Price ($)",
+    min_value=float(df['psa-10-price'].min()),
+    max_value=float(df['psa-10-price'].max()),
+    value=float(df['psa-10-price'].max()),
+    format="$%.2f"
 )
 
 # Minimum and maximum loose price filter
-min_loose_price = log_slider(
-    "Minimum Loose Price ($)", 
-    min_value=float(df['loose-price'].min()), 
-    max_value=float(df['loose-price'].max()), 
-    default_value=float(df['loose-price'].min())
+min_loose_price = st.sidebar.slider(
+    "Minimum Loose Price ($)",
+    min_value=float(df['loose-price'].min()),
+    max_value=float(df['loose-price'].max()),
+    value=float(df['loose-price'].min()),
+    format="$%.2f"
 )
 
-max_loose_price = log_slider(
-    "Maximum Loose Price ($)", 
-    min_value=float(df['loose-price'].min()), 
-    max_value=float(df['loose-price'].max()), 
-    default_value=float(df['loose-price'].max())
+max_loose_price = st.sidebar.slider(
+    "Maximum Loose Price ($)",
+    min_value=float(df['loose-price'].min()),
+    max_value=float(df['loose-price'].max()),
+    value=float(df['loose-price'].max()),
+    format="$%.2f"
 )
 
 # Minimum grading profitability filter
-min_grading_profitability = log_slider(
-    "Minimum Grading Profitability ($)", 
-    min_value=float(df['grading-profitability'].min()), 
-    max_value=float(df['grading-profitability'].max()), 
-    default_value=float(df['grading-profitability'].min())
+min_grading_profitability = st.sidebar.slider(
+    "Minimum Grading Profitability ($)",
+    min_value=float(df['grading-profitability'].min()),
+    max_value=float(df['grading-profitability'].max()),
+    value=float(df['grading-profitability'].min()),
+    format="$%.2f"
 )
 
-# Minimum sales volume filter (linear scale)
+# Minimum sales volume filter
 min_sales = st.sidebar.slider(
     "Minimum Sales Volume",
     min_value=0,
     max_value=int(df['sales-volume'].max()),
     value=0
 )
-
-# Sidebar Ranges (formatted for display)
-st.sidebar.markdown("### Filter Ranges")
-st.sidebar.markdown(f"PSA 10 Price Range: ${min_psa_price:.2f} - ${max_psa_price:.2f}")
-st.sidebar.markdown(f"Loose Price Range: ${min_loose_price:.2f} - ${max_loose_price:.2f}")
-st.sidebar.markdown(f"Grading Profitability: ${min_grading_profitability:.2f}+")
 
 # Apply filters
 filtered_df = df[
