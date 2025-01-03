@@ -6,10 +6,10 @@ import plotly.express as px
 DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
 df = pd.read_csv(DATA_FILE)
 
-# Convert prices to dollars for better readability
-df['psa-10-price'] = df['psa-10-price'] / 100
-df['loose-price'] = df['loose-price'] / 100
-df['grading-profitability'] = df['psa-10-price'] - df['loose-price']
+# Convert prices from cents to dollars
+df['psa-10-price'] = df['psa-10-price'] / 100  # Convert PSA 10 price to dollars
+df['loose-price'] = df['loose-price'] / 100    # Convert Loose price to dollars
+df['grading-profitability'] = df['psa-10-price'] - df['loose-price']  # Calculate grading profitability
 
 # Sidebar Filters
 st.sidebar.header("Filters")
