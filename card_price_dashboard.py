@@ -7,16 +7,14 @@ DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
 df = pd.read_csv(DATA_FILE)
 
 # Ensure all necessary columns exist and compute missing ones dynamically
-df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce').fillna(0) - pd.to_numeric(df['loose-price'], errors='coerce').fillna(0)
-df['market-cap'] = pd.to_numeric(df['loose-price'], errors='coerce').fillna(0) * pd.to_numeric(df['sales-volume'], errors='coerce').fillna(0)
+df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
+df['grading-profitability'] = df['grading-profitability'].fillna(0)
+
+df['market-cap'] = pd.to_numeric(df['loose-price'], errors='coerce') * pd.to_numeric(df['sales-volume'], errors='coerce')
+df['market-cap'] = df['market-cap'].fillna(0)
 
 # Sidebar Filters
 st.sidebar.header("Filters")
-
-# Debugging: Show all column names and the first few rows of the dataframe
-st.sidebar.subheader("Debug Data")
-st.sidebar.write("Available columns in the dataframe:", list(df.columns))
-st.sidebar.write("First few rows of the dataframe:", df.head())
 
 # Minimum and maximum PSA 10 price filter
 st.sidebar.markdown("### PSA 10 Price ($)")
@@ -72,7 +70,7 @@ min_sales = st.sidebar.number_input(
     step=1
 )
 
-# Apply filters to get the filtered DataFrame
+# Apply filters
 filtered_df = df[
     (df['psa-10-price'] >= min_psa_price) &
     (df['psa-10-price'] <= max_psa_price) &
@@ -82,13 +80,6 @@ filtered_df = df[
     (df['sales-volume'] >= min_sales)
 ]
 
-# Debugging: Show filtered data
-st.sidebar.subheader("Filtered Data Preview")
-st.sidebar.write(filtered_df)
-
-# Use the filtered data consistently in the dashboard
-filtered_df = filtered_df.copy()
-
 # Add ranks for the tables
 filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
 filtered_df['Rank Grading'] = filtered_df['grading-profitability'].rank(ascending=False, method="dense")
@@ -96,10 +87,10 @@ filtered_df['Rank Grading'] = filtered_df['grading-profitability'].rank(ascendin
 # Format price and market cap columns
 price_columns = ['psa-10-price', 'loose-price', 'grading-profitability', 'market-cap']
 for col in price_columns:
-    filtered_df[col] = filtered_df[col].apply(lambda x: f"${x:,.2f}" if pd.notnull(x) else "N/A")
+    filtered_df[col] = filtered_df[col].apply(lambda x: f"${x:,.2f}" if x != "N/A" else "N/A")
 
 # Main Dashboard
-st.title("PSA Card Market Cap Dashboard")
+st.title("PSA Card Market Cap Dashboard")  # Updated Title
 
 # Total Cards Metric
 st.header("Total Cards Included in Filter Selections")
@@ -114,7 +105,7 @@ top_market_cap = (
 )
 top_market_cap['Ranking'] = top_market_cap.index + 1
 st.subheader("Top 20 Cards by Market Cap")
-st.dataframe(
+st.table(
     top_market_cap.rename(
         columns={
             "Ranking": "Ranking",
@@ -150,7 +141,7 @@ top_grading_profitability = (
     .reset_index(drop=True)
 )
 top_grading_profitability['Ranking'] = top_grading_profitability.index + 1
-st.dataframe(
+st.table(
     top_grading_profitability.rename(
         columns={
             "Ranking": "Ranking",
@@ -160,5 +151,5 @@ st.dataframe(
             "sales-volume": "Sales/Year",
             "grading-profitability": "Grading Profitability"
         }
-    )[['Ranking', 'Card', 'Raw Price', "PSA 10 Price", 'Sales/Year', 'Grading Profitability']]
+    )[['Ranking', 'Card', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Grading Profitability']]
 )
