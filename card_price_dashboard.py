@@ -6,8 +6,9 @@ import plotly.express as px
 DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
 df = pd.read_csv(DATA_FILE)
 
-# Calculate grading profitability
+# Calculate grading profitability and market capitalization
 df['grading-profitability'] = df['psa-10-price'] - df['loose-price']
+df['market-cap'] = df['loose-price'] * df['sales-volume']
 
 # Sidebar Filters
 st.sidebar.header("Filters")
@@ -99,6 +100,18 @@ scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
 # Show scatterplot
 st.plotly_chart(scatter_fig, use_container_width=True)
 
-# Display Filtered Table
-st.header("Filtered Card Data")
-st.dataframe(filtered_df[['product-name', 'loose-price', 'psa-10-price', 'grading-profitability', 'sales-volume']])
+# Sorting Table: Top 20 Products by Grading Profitability
+st.header("Top 20 Products by Grading Profitability")
+top_grading_profitability = (
+    filtered_df.sort_values(by="grading-profitability", ascending=False)
+    .head(20)
+)
+st.dataframe(top_grading_profitability[['product-name', 'grading-profitability', 'psa-10-price', 'loose-price', 'sales-volume']])
+
+# Sorting Table: Top 20 Cards by Market Capitalization
+st.header("Top 20 Cards by Market Capitalization")
+top_market_cap = (
+    filtered_df.sort_values(by="market-cap", ascending=False)
+    .head(20)
+)
+st.dataframe(top_market_cap[['product-name', 'market-cap', 'loose-price', 'sales-volume']])
