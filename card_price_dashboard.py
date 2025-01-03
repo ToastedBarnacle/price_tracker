@@ -84,11 +84,6 @@ filtered_df = df[
 filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
 filtered_df['Rank Grading'] = filtered_df['grading-profitability'].rank(ascending=False, method="dense")
 
-# Format price and market cap columns
-price_columns = ['psa-10-price', 'loose-price', 'grading-profitability', 'market-cap']
-for col in price_columns:
-    filtered_df[col] = filtered_df[col].apply(lambda x: f"${x:,.2f}" if x != "N/A" else "N/A")
-
 # Main Dashboard
 st.title("Card Price Tracker Dashboard")
 
