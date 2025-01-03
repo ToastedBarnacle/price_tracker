@@ -14,13 +14,18 @@ df['grading-profitability'] = df['psa-10-price'] - df['loose-price']
 def log_slider(label, min_value, max_value, default_value):
     min_log = np.log10(min_value + 1)  # Add 1 to avoid log(0)
     max_log = np.log10(max_value + 1)
+    default_log = np.log10(default_value + 1)
+
+    # Slider for logarithmic scaling
     log_value = st.sidebar.slider(
         label,
         min_value=min_log,
         max_value=max_log,
-        value=np.log10(default_value + 1),
+        value=default_log,
         format="%.2f"
     )
+
+    # Convert back to linear space for use in filters
     return 10 ** log_value - 1
 
 # Sidebar Filters
@@ -64,7 +69,7 @@ min_grading_profitability = log_slider(
     default_value=float(df['grading-profitability'].min())
 )
 
-# Minimum sales volume filter (linear scale since volumes are typically non-logarithmic)
+# Minimum sales volume filter (linear scale)
 min_sales = st.sidebar.slider(
     "Minimum Sales Volume",
     min_value=0,
@@ -81,6 +86,12 @@ filtered_df = df[
     (df['grading-profitability'] >= min_grading_profitability) &
     (df['sales-volume'] >= min_sales)
 ]
+
+# Display the effective ranges of the filters
+st.sidebar.markdown(f"### Filter Ranges")
+st.sidebar.markdown(f"PSA 10 Price: ${min_psa_price:.2f} - ${max_psa_price:.2f}")
+st.sidebar.markdown(f"Loose Price: ${min_loose_price:.2f} - ${max_loose_price:.2f}")
+st.sidebar.markdown(f"Grading Profitability: ${min_grading_profitability:.2f}+")
 
 # Main Dashboard
 st.title("Card Price Tracker Dashboard")
