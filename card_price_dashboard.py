@@ -72,7 +72,7 @@ min_sales = st.sidebar.number_input(
     step=1
 )
 
-# Apply filters
+# Apply filters to get the filtered DataFrame
 filtered_df = df[
     (df['psa-10-price'] >= min_psa_price) &
     (df['psa-10-price'] <= max_psa_price) &
@@ -86,7 +86,7 @@ filtered_df = df[
 st.sidebar.subheader("Filtered Data Preview")
 st.sidebar.write(filtered_df)
 
-# Use the filtered data for the dashboard
+# Use the filtered data consistently in the dashboard
 filtered_df = filtered_df.copy()
 
 # Add ranks for the tables
