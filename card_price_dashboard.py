@@ -86,6 +86,9 @@ filtered_df = df[
 st.sidebar.subheader("Filtered Data Preview")
 st.sidebar.write(filtered_df)
 
+# Use the filtered data for the dashboard
+filtered_df = filtered_df.copy()
+
 # Add ranks for the tables
 filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
 filtered_df['Rank Grading'] = filtered_df['grading-profitability'].rank(ascending=False, method="dense")
@@ -159,4 +162,3 @@ st.dataframe(
         }
     )[['Ranking', 'Card', 'Raw Price', "PSA 10 Price", 'Sales/Year', 'Grading Profitability']]
 )
-
