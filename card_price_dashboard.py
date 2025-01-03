@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import numpy as np
 
 # Load the data
 DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
@@ -9,53 +10,61 @@ df = pd.read_csv(DATA_FILE)
 # Calculate grading profitability
 df['grading-profitability'] = df['psa-10-price'] - df['loose-price']
 
+# Helper function for log-scaled slider
+def log_slider(label, min_value, max_value, default_value):
+    min_log = np.log10(min_value + 1)  # Add 1 to avoid log(0)
+    max_log = np.log10(max_value + 1)
+    log_value = st.sidebar.slider(
+        label,
+        min_value=min_log,
+        max_value=max_log,
+        value=np.log10(default_value + 1),
+        format="%.2f"
+    )
+    return 10 ** log_value - 1
+
 # Sidebar Filters
 st.sidebar.header("Filters")
 
-# Minimum and maximum PSA 10 price filter
-min_psa_price = st.sidebar.slider(
-    "Minimum PSA 10 Price ($)",
-    min_value=float(df['psa-10-price'].min()),
-    max_value=float(df['psa-10-price'].max()),
-    value=float(df['psa-10-price'].min()),
-    format="$%.2f"
+# Minimum and maximum PSA 10 price filter (log scale)
+min_psa_price = log_slider(
+    "Minimum PSA 10 Price ($)", 
+    min_value=float(df['psa-10-price'].min()), 
+    max_value=float(df['psa-10-price'].max()), 
+    default_value=float(df['psa-10-price'].min())
 )
 
-max_psa_price = st.sidebar.slider(
-    "Maximum PSA 10 Price ($)",
-    min_value=float(df['psa-10-price'].min()),
-    max_value=float(df['psa-10-price'].max()),
-    value=float(df['psa-10-price'].max()),
-    format="$%.2f"
+max_psa_price = log_slider(
+    "Maximum PSA 10 Price ($)", 
+    min_value=float(df['psa-10-price'].min()), 
+    max_value=float(df['psa-10-price'].max()), 
+    default_value=float(df['psa-10-price'].max())
 )
 
-# Minimum and maximum loose price filter
-min_loose_price = st.sidebar.slider(
-    "Minimum Loose Price ($)",
-    min_value=float(df['loose-price'].min()),
-    max_value=float(df['loose-price'].max()),
-    value=float(df['loose-price'].min()),
-    format="$%.2f"
+# Minimum and maximum loose price filter (log scale)
+min_loose_price = log_slider(
+    "Minimum Loose Price ($)", 
+    min_value=float(df['loose-price'].min()), 
+    max_value=float(df['loose-price'].max()), 
+    default_value=float(df['loose-price'].min())
 )
 
-max_loose_price = st.sidebar.slider(
-    "Maximum Loose Price ($)",
-    min_value=float(df['loose-price'].min()),
-    max_value=float(df['loose-price'].max()),
-    value=float(df['loose-price'].max()),
-    format="$%.2f"
+max_loose_price = log_slider(
+    "Maximum Loose Price ($)", 
+    min_value=float(df['loose-price'].min()), 
+    max_value=float(df['loose-price'].max()), 
+    default_value=float(df['loose-price'].max())
 )
 
-# Minimum grading profitability filter
-min_grading_profitability = st.sidebar.slider(
-    "Minimum Grading Profitability ($)",
-    min_value=float(df['grading-profitability'].min()),
-    max_value=float(df['grading-profitability'].max()),
-    value=float(df['grading-profitability'].min()),
-    format="$%.2f"
+# Minimum grading profitability filter (log scale)
+min_grading_profitability = log_slider(
+    "Minimum Grading Profitability ($)", 
+    min_value=float(df['grading-profitability'].min()), 
+    max_value=float(df['grading-profitability'].max()), 
+    default_value=float(df['grading-profitability'].min())
 )
 
-# Minimum sales volume filter
+# Minimum sales volume filter (linear scale since volumes are typically non-logarithmic)
 min_sales = st.sidebar.slider(
     "Minimum Sales Volume",
     min_value=0,
