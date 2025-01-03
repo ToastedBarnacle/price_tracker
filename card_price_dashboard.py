@@ -114,29 +114,30 @@ st.title("PSA 10 Card Market Cap Dashboard")
 # Total Cards Metric
 st.metric("Total Cards", len(filtered_df))
 
+# Function to generate an HTML table with clickable links
+def render_table_with_links(df, columns, url_column):
+    table_html = df[columns + [url_column]].copy()
+    table_html[url_column] = table_html[url_column].apply(
+        lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>'
+    )
+    table_html = table_html.to_html(escape=False, index=False)
+    return table_html
+
 # Top Cards by Market Cap
+st.subheader("Top 20 Cards by Market Cap")
 top_market_cap = (
     filtered_df.sort_values(by="market-cap", ascending=False)
     .head(20)
     .reset_index(drop=True)
 )
 top_market_cap['Ranking'] = top_market_cap.index + 1
-st.subheader("Top 20 Cards by Market Cap")
-st.dataframe(
-    top_market_cap.rename(
-        columns={
-            "Ranking": "Ranking",
-            "product-name": "Card",
-            "console-name": "Set",
-            "loose-price": "Raw Price",
-            "psa-10-price": "PSA 10 Price",
-            "sales-volume": "Sales/Year",
-            "market-cap": "Market Cap",
-            "product-url": "View on PriceCharting"
-        }
-    ).assign(**{
-        "View on PriceCharting": top_market_cap['product-url'].apply(lambda x: f"[View on PriceCharting]({x})")
-    })[['Ranking', 'Card', 'Set', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Market Cap', 'View on PriceCharting']]
+st.markdown(
+    render_table_with_links(
+        top_market_cap,
+        ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap'],
+        'product-url'
+    ),
+    unsafe_allow_html=True
 )
 
 # Scatterplot Visualization
@@ -162,19 +163,11 @@ top_grading_profitability = (
     .reset_index(drop=True)
 )
 top_grading_profitability['Ranking'] = top_grading_profitability.index + 1
-st.dataframe(
-    top_grading_profitability.rename(
-        columns={
-            "Ranking": "Ranking",
-            "product-name": "Card",
-            "console-name": "Set",
-            "loose-price": "Raw Price",
-            "psa-10-price": "PSA 10 Price",
-            "sales-volume": "Sales/Year",
-            "grading-profitability": "Grading Profitability",
-            "product-url": "View on PriceCharting"
-        }
-    ).assign(**{
-        "View on PriceCharting": top_grading_profitability['product-url'].apply(lambda x: f"[View on PriceCharting]({x})")
-    })[['Ranking', 'Card', 'Set', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Grading Profitability', 'View on PriceCharting']]
+st.markdown(
+    render_table_with_links(
+        top_grading_profitability,
+        ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'grading-profitability'],
+        'product-url'
+    ),
+    unsafe_allow_html=True
 )
