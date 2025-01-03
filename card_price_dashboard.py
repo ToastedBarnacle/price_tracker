@@ -123,12 +123,13 @@ st.dataframe(
         columns={
             "Ranking": "Ranking",
             "product-name": "Card",
+            "console-name": "Set",
             "loose-price": "Raw Price",
             "psa-10-price": "PSA 10 Price",
             "sales-volume": "Sales/Year",
             "market-cap": "Market Cap"
         }
-    )[['Ranking', 'Card', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Market Cap']]
+    )[['Ranking', 'Card', 'Set', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Market Cap']]
 )
 
 # Scatterplot Visualization
@@ -137,6 +138,7 @@ scatter_fig = px.scatter(
     filtered_df,
     x="loose-price",
     y="psa-10-price",
+    hover_data=["console-name"],  # Add console name (Set) to hover data
     hover_name="product-name",
     title="Loose Price vs PSA 10 Graded Price",
     labels={"loose-price": "Loose Price ($)", "psa-10-price": "PSA 10 Price ($)"},
@@ -158,10 +160,11 @@ st.dataframe(
         columns={
             "Ranking": "Ranking",
             "product-name": "Card",
+            "console-name": "Set",
             "loose-price": "Raw Price",
             "psa-10-price": "PSA 10 Price",
             "sales-volume": "Sales/Year",
             "grading-profitability": "Grading Profitability"
         }
-    )[['Ranking', 'Card', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Grading Profitability']]
+    )[['Ranking', 'Card', 'Set', 'Raw Price', 'PSA 10 Price', 'Sales/Year', 'Grading Profitability']]
 )
