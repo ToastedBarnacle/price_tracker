@@ -13,6 +13,9 @@ df['grading-profitability'] = df['grading-profitability'].fillna(0)
 df['market-cap'] = pd.to_numeric(df['loose-price'], errors='coerce') * pd.to_numeric(df['sales-volume'], errors='coerce')
 df['market-cap'] = df['market-cap'].fillna(0)
 
+# Extract release year from release-date
+df['release-year'] = pd.to_datetime(df['release-date'], errors='coerce').dt.year.fillna(0).astype(int)
+
 # Sidebar Filters
 st.sidebar.header("Filters")
 
@@ -70,6 +73,19 @@ min_sales = st.sidebar.number_input(
     step=1
 )
 
+# Filter by release year
+st.sidebar.markdown("### Release Year")
+years = list(range(1999, 2026))
+selected_years = st.sidebar.multiselect(
+    "Select Release Years",
+    options=years,
+    default=years
+)
+
+# "Select All" button
+if st.sidebar.button("Select All Years"):
+    selected_years = years
+
 # Apply filters
 filtered_df = df[
     (df['psa-10-price'] >= min_psa_price) &
@@ -77,7 +93,8 @@ filtered_df = df[
     (df['loose-price'] >= min_loose_price) &
     (df['loose-price'] <= max_loose_price) &
     (df['grading-profitability'] >= min_grading_profitability) &
-    (df['sales-volume'] >= min_sales)
+    (df['sales-volume'] >= min_sales) &
+    (df['release-year'].isin(selected_years))
 ]
 
 # Add ranks for the tables
