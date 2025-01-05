@@ -1,128 +1,113 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from st_aggrid import AgGrid, GridOptionsBuilder
 
 # Set page title
 st.set_page_config(page_title="PSA 10 Card Market Cap Dashboard")
 
 # Load the data
-DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
+DATA_FILE = "filtered_price_data.csv"
 df = pd.read_csv(DATA_FILE)
 
-# Debugging: Print column names to confirm
-st.write("Columns in Dataframe:", df.columns.tolist())
+# Ensure all necessary columns exist and compute missing ones dynamically
+df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
+df['grading-profitability'] = df['grading-profitability'].fillna(0)
+df['market-cap'] = pd.to_numeric(df['loose-price'], errors='coerce') * pd.to_numeric(df['sales-volume'], errors='coerce')
+df['market-cap'] = df['market-cap'].fillna(0)
+df['release-year'] = pd.to_datetime(df['release-date'], errors='coerce').dt.year.fillna(0).astype(int)
+df['product-url'] = df['id'].apply(lambda x: f"https://www.pricecharting.com/offers?product={x}")
 
-# Rename columns to match expected names
-df.rename(
-    columns={
+# Sidebar Filters
+st.sidebar.header("Filters")
+min_psa_price = st.sidebar.number_input("Minimum PSA 10 Price ($)", min_value=0.0, value=0.0, step=1.0)
+max_psa_price = st.sidebar.number_input("Maximum PSA 10 Price ($)", min_value=0.0, value=df['psa-10-price'].max(), step=1.0)
+min_loose_price = st.sidebar.number_input("Minimum Loose Price ($)", min_value=0.0, value=0.0, step=1.0)
+max_loose_price = st.sidebar.number_input("Maximum Loose Price ($)", min_value=0.0, value=df['loose-price'].max(), step=1.0)
+min_sales = st.sidebar.number_input("Minimum Sales Volume", min_value=0, value=0, step=1)
+years = list(range(1999, 2026))
+selected_years = st.sidebar.multiselect("Select Release Years", options=years, default=years)
+
+# Filter data
+filtered_df = df[
+    (df['psa-10-price'] >= min_psa_price) &
+    (df['psa-10-price'] <= max_psa_price) &
+    (df['loose-price'] >= min_loose_price) &
+    (df['loose-price'] <= max_loose_price) &
+    (df['sales-volume'] >= min_sales) &
+    (df['release-year'].isin(selected_years))
+]
+
+# Add ranks for the tables
+filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
+
+# Function to generate an HTML table with clickable links
+def render_table_with_links(df, columns, url_column):
+    table_html = df[columns + [url_column]].copy()
+    table_html[url_column] = table_html[url_column].apply(
+        lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>'
+    )
+    table_html = table_html.rename(columns={
+        "Ranking": "Ranking",
+        "product-name": "Card",
+        "console-name": "Set",
         "loose-price": "Raw Price",
         "psa-10-price": "PSA 10 Price",
         "sales-volume": "Sales/Year",
         "market-cap": "Market Cap",
-        "console-name": "Set",
-        "grading-profitability": "Grading Profitability",
-    },
-    inplace=True,
-    errors="ignore"
-)
-
-# Ensure computed columns exist
-if "Grading Profitability" not in df.columns:
-    df["Grading Profitability"] = pd.to_numeric(df["PSA 10 Price"], errors="coerce") - pd.to_numeric(df["Raw Price"], errors="coerce")
-    df["Grading Profitability"] = df["Grading Profitability"].fillna(0)
-
-if "Market Cap" not in df.columns:
-    df["Market Cap"] = pd.to_numeric(df["Raw Price"], errors="coerce") * pd.to_numeric(df["Sales/Year"], errors="coerce")
-    df["Market Cap"] = df["Market Cap"].fillna(0)
-
-# Sidebar Filters
-st.sidebar.header("Filters")
-
-# Minimum and maximum PSA 10 price filter
-st.sidebar.markdown("### PSA 10 Price ($)")
-min_psa_price = st.sidebar.number_input(
-    "Minimum PSA 10 Price ($)", 
-    min_value=0.0, 
-    max_value=df["PSA 10 Price"].max() if "PSA 10 Price" in df.columns else 0.0, 
-    value=df["PSA 10 Price"].min() if "PSA 10 Price" in df.columns else 0.0, 
-    step=1.0
-)
-max_psa_price = st.sidebar.number_input(
-    "Maximum PSA 10 Price ($)", 
-    min_value=0.0, 
-    max_value=df["PSA 10 Price"].max() if "PSA 10 Price" in df.columns else 0.0, 
-    value=df["PSA 10 Price"].max() if "PSA 10 Price" in df.columns else 0.0, 
-    step=1.0
-)
-
-# Minimum and maximum raw price filter
-st.sidebar.markdown("### Raw Price ($)")
-min_raw_price = st.sidebar.number_input(
-    "Minimum Raw Price ($)", 
-    min_value=0.0, 
-    max_value=df["Raw Price"].max() if "Raw Price" in df.columns else 0.0, 
-    value=df["Raw Price"].min() if "Raw Price" in df.columns else 0.0, 
-    step=1.0
-)
-max_raw_price = st.sidebar.number_input(
-    "Maximum Raw Price ($)", 
-    min_value=0.0, 
-    max_value=df["Raw Price"].max() if "Raw Price" in df.columns else 0.0, 
-    value=df["Raw Price"].max() if "Raw Price" in df.columns else 0.0, 
-    step=1.0
-)
-
-# Minimum grading profitability filter
-st.sidebar.markdown("### Grading Profitability ($)")
-min_grading_profitability = st.sidebar.number_input(
-    "Minimum Grading Profitability ($)", 
-    min_value=0.0, 
-    max_value=df["Grading Profitability"].max() if "Grading Profitability" in df.columns else 0.0, 
-    value=0.0, 
-    step=1.0
-)
-
-# Minimum sales volume filter
-st.sidebar.markdown("### Sales/Year")
-min_sales = st.sidebar.number_input(
-    "Minimum Sales/Year",
-    min_value=0,
-    max_value=int(df["Sales/Year"].max()) if "Sales/Year" in df.columns else 0,
-    value=0,
-    step=1
-)
-
-# Apply filters
-filtered_df = df[
-    (df["PSA 10 Price"] >= min_psa_price) &
-    (df["PSA 10 Price"] <= max_psa_price) &
-    (df["Raw Price"] >= min_raw_price) &
-    (df["Raw Price"] <= max_raw_price) &
-    (df["Grading Profitability"] >= min_grading_profitability) &
-    (df["Sales/Year"] >= min_sales)
-]
+        "product-url": "PriceCharting Link"
+    })
+    table_html = table_html.to_html(escape=False, index=False)
+    return table_html
 
 # Main Dashboard
 st.title("PSA 10 Card Market Cap Dashboard")
 st.metric("Total Cards", len(filtered_df))
 
-# Render sortable tables with AgGrid
-def render_aggrid_table(df, columns):
-    grid_options = GridOptionsBuilder.from_dataframe(df[columns])
-    grid_options.configure_pagination(paginationAutoPageSize=True)
-    grid_options.configure_default_column(sortable=True, filter=True, resizable=True)
-    AgGrid(df[columns], gridOptions=grid_options.build())
-
 # Top Cards by Market Cap
 st.subheader("Top 20 Cards by Market Cap")
 top_market_cap = (
-    filtered_df.sort_values(by="Market Cap", ascending=False)
+    filtered_df.sort_values(by="market-cap", ascending=False)
     .head(20)
     .reset_index(drop=True)
 )
-top_market_cap["Ranking"] = top_market_cap.index + 1
-render_aggrid_table(
-    top_market_cap,
-    ["Ranking", "Set", "Raw Price", "PSA 10 Price", "Sales/Year", "Market Cap"]
+top_market_cap['Ranking'] = top_market_cap.index + 1
+st.markdown(
+    render_table_with_links(
+        top_market_cap,
+        ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap'],
+        'product-url'
+    ),
+    unsafe_allow_html=True
+)
+
+# Scatterplot Visualization
+st.subheader("Loose Price vs PSA 10 Graded Price")
+scatter_fig = px.scatter(
+    filtered_df,
+    x="loose-price",
+    y="psa-10-price",
+    hover_name="product-name",
+    hover_data=["console-name", "product-url"],
+    title="Loose Price vs PSA 10 Graded Price",
+    labels={"loose-price": "Loose Price ($)", "psa-10-price": "PSA 10 Price ($)"},
+    template="plotly_white",
+)
+scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
+st.plotly_chart(scatter_fig, use_container_width=True)
+
+# Most Profitable Cards to Grade
+st.subheader("20 Most Profitable Cards to Grade")
+top_grading_profitability = (
+    filtered_df.sort_values(by="grading-profitability", ascending=False)
+    .head(20)
+    .reset_index(drop=True)
+)
+top_grading_profitability['Ranking'] = top_grading_profitability.index + 1
+st.markdown(
+    render_table_with_links(
+        top_grading_profitability,
+        ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'grading-profitability'],
+        'product-url'
+    ),
+    unsafe_allow_html=True
 )
