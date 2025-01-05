@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from st_aggrid import AgGrid, GridOptionsBuilder
 
 # Set page title
 st.set_page_config(page_title="PSA 10 Card Market Cap Dashboard")
@@ -40,28 +41,18 @@ filtered_df = df[
 # Add ranks for the tables
 filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
 
-# Function to generate an HTML table with clickable links
-def render_table_with_links(df, columns, url_column):
-    table_html = df[columns + [url_column]].copy()
-    table_html[url_column] = table_html[url_column].apply(
-        lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>'
-    )
-    table_html = table_html.rename(columns={
-        "Ranking": "Ranking",
-        "product-name": "Card",
-        "console-name": "Set",
-        "loose-price": "Raw Price",
-        "psa-10-price": "PSA 10 Price",
-        "sales-volume": "Sales/Year",
-        "market-cap": "Market Cap",
-        "product-url": "PriceCharting Link"
-    })
-    table_html = table_html.to_html(escape=False, index=False)
-    return table_html
-
 # Main Dashboard
 st.title("PSA 10 Card Market Cap Dashboard")
 st.metric("Total Cards", len(filtered_df))
+
+# Function to render an AgGrid table
+def render_aggrid_table(df, columns, rename_map):
+    display_df = df.copy()
+    display_df = display_df.rename(columns=rename_map)
+    grid_options = GridOptionsBuilder.from_dataframe(display_df[columns])
+    grid_options.configure_default_column(sortable=True, resizable=True, filter=True)
+    grid_options.configure_pagination(enabled=True, paginationAutoPageSize=True)
+    AgGrid(display_df[columns], gridOptions=grid_options.build(), theme="alpine", height=400)
 
 # Top Cards by Market Cap
 st.subheader("Top 20 Cards by Market Cap")
@@ -71,13 +62,18 @@ top_market_cap = (
     .reset_index(drop=True)
 )
 top_market_cap['Ranking'] = top_market_cap.index + 1
-st.markdown(
-    render_table_with_links(
-        top_market_cap,
-        ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap'],
-        'product-url'
-    ),
-    unsafe_allow_html=True
+render_aggrid_table(
+    top_market_cap,
+    ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap'],
+    {
+        "Ranking": "Ranking",
+        "product-name": "Card",
+        "console-name": "Set",
+        "loose-price": "Raw Price",
+        "psa-10-price": "PSA 10 Price",
+        "sales-volume": "Sales/Year",
+        "market-cap": "Market Cap"
+    }
 )
 
 # Scatterplot Visualization
@@ -103,11 +99,16 @@ top_grading_profitability = (
     .reset_index(drop=True)
 )
 top_grading_profitability['Ranking'] = top_grading_profitability.index + 1
-st.markdown(
-    render_table_with_links(
-        top_grading_profitability,
-        ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'grading-profitability'],
-        'product-url'
-    ),
-    unsafe_allow_html=True
+render_aggrid_table(
+    top_grading_profitability,
+    ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'grading-profitability'],
+    {
+        "Ranking": "Ranking",
+        "product-name": "Card",
+        "console-name": "Set",
+        "loose-price": "Raw Price",
+        "psa-10-price": "PSA 10 Price",
+        "sales-volume": "Sales/Year",
+        "grading-profitability": "Grading Profitability"
+    }
 )
