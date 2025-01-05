@@ -1,173 +1,105 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from datetime import datetime, timedelta
 
 # Set page title
-st.set_page_config(page_title="PSA 10 Card Market Cap Dashboard")
+st.set_page_config(page_title="PSA 10 Card Dashboard", layout="wide")
 
 # Load the data
-DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
+DATA_FILE = "filtered_price_data.csv"
 df = pd.read_csv(DATA_FILE)
 
-# Ensure all necessary columns exist and compute missing ones dynamically
+# Add "page" selection
+st.sidebar.title("Navigation")
+page = st.sidebar.radio("Go to", ["Market Cap Dashboard", "PSA 10 Card Trends"])
+
+# Common calculations
 df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
 df['grading-profitability'] = df['grading-profitability'].fillna(0)
-
 df['market-cap'] = pd.to_numeric(df['loose-price'], errors='coerce') * pd.to_numeric(df['sales-volume'], errors='coerce')
 df['market-cap'] = df['market-cap'].fillna(0)
-
-# Extract release year from release-date
 df['release-year'] = pd.to_datetime(df['release-date'], errors='coerce').dt.year.fillna(0).astype(int)
+df['product-url'] = df['id'].apply(lambda x: f"https://www.pricecharting.com/offers?product={x}")
 
-# Generate PriceCharting URLs
-BASE_URL = "https://www.pricecharting.com/offers?product="
-df['product-url'] = df['id'].apply(lambda x: f"{BASE_URL}{x}")
-
-# Sidebar Filters
+# Filters for both pages
 st.sidebar.header("Filters")
-
-# Minimum and maximum PSA 10 price filter
-st.sidebar.markdown("### PSA 10 Price ($)")
-min_psa_price = st.sidebar.number_input(
-    "Minimum PSA 10 Price ($)", 
-    min_value=0.0, 
-    max_value=float(df['psa-10-price'].max()), 
-    value=float(df['psa-10-price'].min()), 
-    step=1.0
-)
-max_psa_price = st.sidebar.number_input(
-    "Maximum PSA 10 Price ($)", 
-    min_value=0.0, 
-    max_value=float(df['psa-10-price'].max()), 
-    value=float(df['psa-10-price'].max()), 
-    step=1.0
-)
-
-# Minimum and maximum loose price filter
-st.sidebar.markdown("### Loose Price ($)")
-min_loose_price = st.sidebar.number_input(
-    "Minimum Loose Price ($)", 
-    min_value=0.0, 
-    max_value=float(df['loose-price'].max()), 
-    value=float(df['loose-price'].min()), 
-    step=1.0
-)
-max_loose_price = st.sidebar.number_input(
-    "Maximum Loose Price ($)", 
-    min_value=0.0, 
-    max_value=float(df['loose-price'].max()), 
-    value=float(df['loose-price'].max()), 
-    step=1.0
-)
-
-# Minimum grading profitability filter
-st.sidebar.markdown("### Grading Profitability ($)")
-min_grading_profitability = st.sidebar.number_input(
-    "Minimum Grading Profitability ($)", 
-    min_value=0.0, 
-    max_value=float(df['grading-profitability'].max()), 
-    value=0.0, 
-    step=1.0
-)
-
-# Minimum sales volume filter
-st.sidebar.markdown("### Sales Volume")
-min_sales = st.sidebar.number_input(
-    "Minimum Sales Volume",
-    min_value=0,
-    max_value=int(df['sales-volume'].max()),
-    value=0,
-    step=1
-)
-
-# Filter by release year
-st.sidebar.markdown("### Release Year")
+min_psa_price = st.sidebar.number_input("Minimum PSA 10 Price ($)", min_value=0.0, value=0.0, step=1.0)
+max_psa_price = st.sidebar.number_input("Maximum PSA 10 Price ($)", min_value=0.0, value=df['psa-10-price'].max(), step=1.0)
+min_loose_price = st.sidebar.number_input("Minimum Loose Price ($)", min_value=0.0, value=0.0, step=1.0)
+max_loose_price = st.sidebar.number_input("Maximum Loose Price ($)", min_value=0.0, value=df['loose-price'].max(), step=1.0)
+min_sales = st.sidebar.number_input("Minimum Sales Volume", min_value=0, value=0, step=1)
 years = list(range(1999, 2026))
-selected_years = st.sidebar.multiselect(
-    "Select Release Years",
-    options=years,
-    default=years
-)
+selected_years = st.sidebar.multiselect("Select Release Years", options=years, default=years)
 
-# "Select All" button
-if st.sidebar.button("Select All Years"):
-    selected_years = years
-
-# Apply filters
+# Filter data
 filtered_df = df[
     (df['psa-10-price'] >= min_psa_price) &
     (df['psa-10-price'] <= max_psa_price) &
     (df['loose-price'] >= min_loose_price) &
     (df['loose-price'] <= max_loose_price) &
-    (df['grading-profitability'] >= min_grading_profitability) &
     (df['sales-volume'] >= min_sales) &
     (df['release-year'].isin(selected_years))
 ]
 
-# Add ranks for the tables
-filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
-filtered_df['Rank Grading'] = filtered_df['grading-profitability'].rank(ascending=False, method="dense")
-
-# Main Dashboard
-st.title("PSA 10 Card Market Cap Dashboard")
-
-# Total Cards Metric
-st.metric("Total Cards", len(filtered_df))
-
-# Function to generate an HTML table with clickable links
-def render_table_with_links(df, columns, url_column):
-    table_html = df[columns + [url_column]].copy()
-    table_html[url_column] = table_html[url_column].apply(
-        lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>'
+# Render Market Cap Dashboard
+if page == "Market Cap Dashboard":
+    st.title("PSA 10 Card Market Cap Dashboard")
+    st.metric("Total Cards", len(filtered_df))
+    
+    # Market Cap Table
+    st.subheader("Top 20 Cards by Market Cap")
+    top_market_cap = filtered_df.sort_values(by="market-cap", ascending=False).head(20)
+    top_market_cap['Ranking'] = top_market_cap.index + 1
+    st.dataframe(
+        top_market_cap[[
+            'Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap'
+        ]]
     )
-    table_html = table_html.to_html(escape=False, index=False)
-    return table_html
 
-# Top Cards by Market Cap
-st.subheader("Top 20 Cards by Market Cap")
-top_market_cap = (
-    filtered_df.sort_values(by="market-cap", ascending=False)
-    .head(20)
-    .reset_index(drop=True)
-)
-top_market_cap['Ranking'] = top_market_cap.index + 1
-st.markdown(
-    render_table_with_links(
-        top_market_cap,
-        ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap'],
-        'product-url'
-    ),
-    unsafe_allow_html=True
-)
+# Render PSA 10 Card Trends Page
+elif page == "PSA 10 Card Trends":
+    st.title("PSA 10 Card Trends")
+    st.sidebar.markdown("### Time Range")
+    time_range = st.sidebar.selectbox("Select Time Range", ["Weekly", "Monthly", "3 Months", "6 Months"])
+    
+    # Define time deltas
+    time_deltas = {
+        "Weekly": timedelta(weeks=1),
+        "Monthly": timedelta(days=30),
+        "3 Months": timedelta(days=90),
+        "6 Months": timedelta(days=180),
+    }
+    delta = time_deltas[time_range]
+    
+    # Simulated time series data (Replace this with real data loading logic)
+    today = datetime.now()
+    filtered_df['date'] = today - pd.to_timedelta(filtered_df.index, unit='d')
+    filtered_df['psa-10-price-change'] = filtered_df['psa-10-price'] * (1 + (filtered_df.index % 10) / 100)
+    filtered_df['sales-volume-change'] = filtered_df['sales-volume'] * (1 + (filtered_df.index % 5) / 100)
+    filtered_df['loose-price-change'] = filtered_df['loose-price'] * (1 + (filtered_df.index % 8) / 100)
 
-# Scatterplot Visualization
-st.subheader("Loose Price vs PSA 10 Graded Price")
-scatter_fig = px.scatter(
-    filtered_df,
-    x="loose-price",
-    y="psa-10-price",
-    hover_name="product-name",
-    hover_data=["console-name", "product-url"],
-    title="Loose Price vs PSA 10 Graded Price",
-    labels={"loose-price": "Loose Price ($)", "psa-10-price": "PSA 10 Price ($)"},
-    template="plotly_white",
-)
-scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
-st.plotly_chart(scatter_fig, use_container_width=True)
-
-# Most Profitable Cards to Grade
-st.subheader("20 Most Profitable Cards to Grade")
-top_grading_profitability = (
-    filtered_df.sort_values(by="grading-profitability", ascending=False)
-    .head(20)
-    .reset_index(drop=True)
-)
-top_grading_profitability['Ranking'] = top_grading_profitability.index + 1
-st.markdown(
-    render_table_with_links(
-        top_grading_profitability,
-        ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'grading-profitability'],
-        'product-url'
-    ),
-    unsafe_allow_html=True
-)
+    # Weekly Change Tables
+    st.subheader(f"Top 10 Cards by PSA 10 Price Change ({time_range})")
+    top_psa_change = filtered_df.sort_values(by='psa-10-price-change', ascending=False).head(10)
+    st.dataframe(
+        top_psa_change[[
+            'product-name', 'console-name', 'psa-10-price', 'psa-10-price-change'
+        ]]
+    )
+    
+    st.subheader(f"Top 10 Cards by Sales Volume Change ({time_range})")
+    top_sales_change = filtered_df.sort_values(by='sales-volume-change', ascending=False).head(10)
+    st.dataframe(
+        top_sales_change[[
+            'product-name', 'console-name', 'sales-volume', 'sales-volume-change'
+        ]]
+    )
+    
+    st.subheader(f"Top 10 Cards by Loose Price Change ({time_range})")
+    top_loose_change = filtered_df.sort_values(by='loose-price-change', ascending=False).head(10)
+    st.dataframe(
+        top_loose_change[[
+            'product-name', 'console-name', 'loose-price', 'loose-price-change'
+        ]]
+    )
