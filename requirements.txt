@@ -2,4 +2,6 @@ pandas
 matplotlib
 streamlit
 plotly
+beautifulsoup4
+requests
 streamlit-aggrid
