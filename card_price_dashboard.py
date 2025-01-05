@@ -37,6 +37,18 @@ filtered_df = df[
     (df['release-year'].isin(selected_years))
 ]
 
+# Format financial columns
+def format_currency(value):
+    return f"${value:,.2f}" if pd.notnull(value) else "N/A"
+
+def format_sales(value):
+    return f"{value:,}" if pd.notnull(value) else "N/A"
+
+filtered_df['loose-price'] = filtered_df['loose-price'].apply(format_currency)
+filtered_df['psa-10-price'] = filtered_df['psa-10-price'].apply(format_currency)
+filtered_df['market-cap'] = filtered_df['market-cap'].apply(format_currency)
+filtered_df['sales-volume'] = filtered_df['sales-volume'].apply(format_sales)
+
 # Add ranks for the tables
 filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
 
