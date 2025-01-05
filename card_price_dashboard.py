@@ -10,10 +10,10 @@ st.set_page_config(page_title="PSA 10 Card Market Cap Dashboard")
 DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
 df = pd.read_csv(DATA_FILE)
 
-# Debugging: Print column names to ensure they match
+# Debugging: Print column names to confirm
 st.write("Columns in Dataframe:", df.columns.tolist())
 
-# Ensure all necessary columns exist and rename them
+# Rename columns to match expected names
 df.rename(
     columns={
         "loose-price": "Raw Price",
@@ -24,10 +24,10 @@ df.rename(
         "grading-profitability": "Grading Profitability",
     },
     inplace=True,
-    errors="ignore",  # Do not raise errors for missing columns
+    errors="ignore"
 )
 
-# Add computed columns if missing
+# Ensure computed columns exist
 if "Grading Profitability" not in df.columns:
     df["Grading Profitability"] = pd.to_numeric(df["PSA 10 Price"], errors="coerce") - pd.to_numeric(df["Raw Price"], errors="coerce")
     df["Grading Profitability"] = df["Grading Profitability"].fillna(0)
@@ -44,15 +44,15 @@ st.sidebar.markdown("### PSA 10 Price ($)")
 min_psa_price = st.sidebar.number_input(
     "Minimum PSA 10 Price ($)", 
     min_value=0.0, 
-    max_value=float(df["PSA 10 Price"].max()), 
-    value=float(df["PSA 10 Price"].min()), 
+    max_value=df["PSA 10 Price"].max() if "PSA 10 Price" in df.columns else 0.0, 
+    value=df["PSA 10 Price"].min() if "PSA 10 Price" in df.columns else 0.0, 
     step=1.0
 )
 max_psa_price = st.sidebar.number_input(
     "Maximum PSA 10 Price ($)", 
     min_value=0.0, 
-    max_value=float(df["PSA 10 Price"].max()), 
-    value=float(df["PSA 10 Price"].max()), 
+    max_value=df["PSA 10 Price"].max() if "PSA 10 Price" in df.columns else 0.0, 
+    value=df["PSA 10 Price"].max() if "PSA 10 Price" in df.columns else 0.0, 
     step=1.0
 )
 
@@ -61,15 +61,15 @@ st.sidebar.markdown("### Raw Price ($)")
 min_raw_price = st.sidebar.number_input(
     "Minimum Raw Price ($)", 
     min_value=0.0, 
-    max_value=float(df["Raw Price"].max()), 
-    value=float(df["Raw Price"].min()), 
+    max_value=df["Raw Price"].max() if "Raw Price" in df.columns else 0.0, 
+    value=df["Raw Price"].min() if "Raw Price" in df.columns else 0.0, 
     step=1.0
 )
 max_raw_price = st.sidebar.number_input(
     "Maximum Raw Price ($)", 
     min_value=0.0, 
-    max_value=float(df["Raw Price"].max()), 
-    value=float(df["Raw Price"].max()), 
+    max_value=df["Raw Price"].max() if "Raw Price" in df.columns else 0.0, 
+    value=df["Raw Price"].max() if "Raw Price" in df.columns else 0.0, 
     step=1.0
 )
 
@@ -78,7 +78,7 @@ st.sidebar.markdown("### Grading Profitability ($)")
 min_grading_profitability = st.sidebar.number_input(
     "Minimum Grading Profitability ($)", 
     min_value=0.0, 
-    max_value=float(df["Grading Profitability"].max()), 
+    max_value=df["Grading Profitability"].max() if "Grading Profitability" in df.columns else 0.0, 
     value=0.0, 
     step=1.0
 )
@@ -88,7 +88,7 @@ st.sidebar.markdown("### Sales/Year")
 min_sales = st.sidebar.number_input(
     "Minimum Sales/Year",
     min_value=0,
-    max_value=int(df["Sales/Year"].max()),
+    max_value=int(df["Sales/Year"].max()) if "Sales/Year" in df.columns else 0,
     value=0,
     step=1
 )
@@ -103,23 +103,15 @@ filtered_df = df[
     (df["Sales/Year"] >= min_sales)
 ]
 
-# Add ranks for the tables
-filtered_df["Ranking"] = filtered_df["Market Cap"].rank(ascending=False, method="dense")
-filtered_df["Rank Grading"] = filtered_df["Grading Profitability"].rank(ascending=False, method="dense")
-
 # Main Dashboard
 st.title("PSA 10 Card Market Cap Dashboard")
-
-# Total Cards Metric
 st.metric("Total Cards", len(filtered_df))
 
 # Render sortable tables with AgGrid
 def render_aggrid_table(df, columns):
     grid_options = GridOptionsBuilder.from_dataframe(df[columns])
     grid_options.configure_pagination(paginationAutoPageSize=True)
-    grid_options.configure_default_column(
-        sortable=True, filter=True, resizable=True
-    )
+    grid_options.configure_default_column(sortable=True, filter=True, resizable=True)
     AgGrid(df[columns], gridOptions=grid_options.build())
 
 # Top Cards by Market Cap
@@ -132,5 +124,5 @@ top_market_cap = (
 top_market_cap["Ranking"] = top_market_cap.index + 1
 render_aggrid_table(
     top_market_cap,
-    ["Ranking", "product-name", "Set", "Raw Price", "PSA 10 Price", "Sales/Year", "Market Cap"]
+    ["Ranking", "Set", "Raw Price", "PSA 10 Price", "Sales/Year", "Market Cap"]
 )
