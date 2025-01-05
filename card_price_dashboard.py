@@ -10,7 +10,10 @@ st.set_page_config(page_title="PSA 10 Card Market Cap Dashboard")
 DATA_FILE = "filtered_price_data.csv"  # Your filtered CSV file
 df = pd.read_csv(DATA_FILE)
 
-# Ensure all necessary columns exist and compute missing ones dynamically
+# Debugging: Print column names to ensure they match
+st.write("Columns in Dataframe:", df.columns.tolist())
+
+# Ensure all necessary columns exist and rename them
 df.rename(
     columns={
         "loose-price": "Raw Price",
@@ -21,6 +24,7 @@ df.rename(
         "grading-profitability": "Grading Profitability",
     },
     inplace=True,
+    errors="ignore",  # Do not raise errors for missing columns
 )
 
 # Add computed columns if missing
@@ -109,7 +113,7 @@ st.title("PSA 10 Card Market Cap Dashboard")
 # Total Cards Metric
 st.metric("Total Cards", len(filtered_df))
 
-# Function to render sortable tables with AgGrid
+# Render sortable tables with AgGrid
 def render_aggrid_table(df, columns):
     grid_options = GridOptionsBuilder.from_dataframe(df[columns])
     grid_options.configure_pagination(paginationAutoPageSize=True)
@@ -129,32 +133,4 @@ top_market_cap["Ranking"] = top_market_cap.index + 1
 render_aggrid_table(
     top_market_cap,
     ["Ranking", "product-name", "Set", "Raw Price", "PSA 10 Price", "Sales/Year", "Market Cap"]
-)
-
-# Scatterplot Visualization
-st.subheader("Loose Price vs PSA 10 Graded Price")
-scatter_fig = px.scatter(
-    filtered_df,
-    x="Raw Price",
-    y="PSA 10 Price",
-    hover_name="product-name",
-    hover_data=["Set"],
-    title="Loose Price vs PSA 10 Graded Price",
-    labels={"Raw Price": "Loose Price ($)", "PSA 10 Price": "PSA 10 Price ($)"},
-    template="plotly_white",
-)
-scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
-st.plotly_chart(scatter_fig, use_container_width=True)
-
-# Most Profitable Cards to Grade
-st.subheader("20 Most Profitable Cards to Grade")
-top_grading_profitability = (
-    filtered_df.sort_values(by="Grading Profitability", ascending=False)
-    .head(20)
-    .reset_index(drop=True)
-)
-top_grading_profitability["Ranking"] = top_grading_profitability.index + 1
-render_aggrid_table(
-    top_grading_profitability,
-    ["Ranking", "product-name", "Set", "Raw Price", "PSA 10 Price", "Sales/Year", "Grading Profitability"]
 )
