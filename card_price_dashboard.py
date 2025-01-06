@@ -27,6 +27,9 @@ min_sales = st.sidebar.number_input("Minimum Sales Volume", min_value=0, value=0
 years = list(range(1999, 2026))
 selected_years = st.sidebar.multiselect("Select Release Years", options=years, default=years)
 
+# New: Add a text search bar for card name
+search_query = st.sidebar.text_input("Search by Card Name", value="")
+
 # Apply filters
 filtered_df = df[
     (df['psa-10-price'] >= min_psa_price) &
@@ -36,6 +39,10 @@ filtered_df = df[
     (df['sales-volume'] >= min_sales) &
     (df['release-year'].isin(selected_years))
 ]
+
+# Apply text search filter
+if search_query.strip():
+    filtered_df = filtered_df[filtered_df['product-name'].str.contains(search_query, case=False, na=False)]
 
 # Format financial columns
 def format_currency(value):
@@ -74,7 +81,7 @@ def render_table_with_links(df, columns, url_column):
 
 # Main Dashboard
 st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
-selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"])
+selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"], horizontal=True)
 
 if selected_page == "PSA Card Market Cap":
     st.header("PSA 10 Card Market Cap Dashboard")
