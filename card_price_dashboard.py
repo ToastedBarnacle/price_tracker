@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 # Set page title and layout
-st.set_page_config(page_title="PSA 10 Card Dashboard", layout="wide")
+st.set_page_config(page_title="CardMarketCap.App", layout="wide")
 
 # Load the data
 DATA_FILE = "filtered_price_data.csv"
@@ -73,7 +73,7 @@ def render_table_with_links(df, columns, url_column):
     return table_html
 
 # Main Dashboard
-st.title("PSA 10 Card Dashboard")
+st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
 selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"])
 
 if selected_page == "PSA Card Market Cap":
