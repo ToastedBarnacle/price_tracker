@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
+from importlib import import_module
 
 # Set page title and layout
 st.set_page_config(page_title="CardMarketCap.App", layout="wide")
@@ -161,4 +162,9 @@ if selected_page == "PSA Card Market Cap":
 
 elif selected_page == "PSA Card Trends":
     st.header("PSA Card Trends")
-    st.write("This page is under construction.")
+    try:
+        # Dynamically import the psa_trends module
+        psa_trends = import_module('psa_trends')
+        psa_trends.render_trends_page()
+    except ModuleNotFoundError:
+        st.write("The PSA Trends module is not yet available. Please upload `psa_trends.py` to enable this feature.")
