@@ -105,6 +105,11 @@ def render_trends_page(filters):
             )  # Convert percentages back to numeric
             sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=ascending)
             sorted_trend_data['Ranking'] = range(1, len(sorted_trend_data) + 1)  # Add ranking column
+
+            # Remove the index column manually before displaying the table
+            sorted_trend_data = sorted_trend_data.reset_index(drop=True)
+
+            # Render table without the rogue column
             table = sorted_trend_data.head(10)[['Ranking', 'product-name', 'console-name'] + additional_columns + [sort_column]].rename(
                 columns={
                     'Ranking': 'Rank',
@@ -118,7 +123,7 @@ def render_trends_page(filters):
                     'sales-volume_new': 'New Sales',
                     sort_column: '% Change'
                 }
-            ).reset_index(drop=True)  # Remove the index column explicitly
+            ).reset_index(drop=True)  # Drop index again after renaming columns
             st.table(table)
 
         # Render tables
