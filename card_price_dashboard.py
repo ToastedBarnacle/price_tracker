@@ -15,9 +15,10 @@ if not os.path.exists(DATA_FOLDER):
     st.error(f"Data folder '{DATA_FOLDER}' does not exist. Please upload CSV files to this folder.")
     st.stop()
 
-# List all data files
-data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
-data_files.sort(reverse=True)  # Sort files by name (newest date first)
+# List all data files and sort by modification time
+data_files = [os.path.join(DATA_FOLDER, f) for f in os.listdir(DATA_FOLDER) 
+              if f.startswith("filtered_price_data_") and f.endswith(".csv")]
+data_files = sorted(data_files, key=os.path.getmtime, reverse=True)  # Sort by modification time (newest first)
 
 # Check for available files
 if not data_files:
@@ -25,9 +26,9 @@ if not data_files:
     st.stop()
 
 # Load the newest data file
-DATA_FILE = os.path.join(DATA_FOLDER, data_files[0])
+DATA_FILE = data_files[0]
 df = pd.read_csv(DATA_FILE)
-st.sidebar.info(f"Loaded data file: {data_files[0]}")
+st.sidebar.info(f"Loaded data file: {os.path.basename(DATA_FILE)}")
 
 # Ensure all necessary columns exist and compute missing ones dynamically
 df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
