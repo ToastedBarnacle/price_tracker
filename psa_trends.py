@@ -96,6 +96,10 @@ def render_trends_page(filters):
         trend_type = st.radio("Select Trend Type", ["Top Gainers", "Top Losers"], horizontal=True)
         ascending = trend_type == "Top Losers"
 
+        # Generate PriceCharting link for each card
+        def get_pricecharting_link(product_id):
+            return f"https://www.pricecharting.com/offers?product={product_id}"
+
         # Helper function to render a trends table
         def render_table(title, column_name, sort_column, additional_columns):
             st.subheader(title)
@@ -106,11 +110,14 @@ def render_trends_page(filters):
             sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=ascending)
             sorted_trend_data['Ranking'] = range(1, len(sorted_trend_data) + 1)  # Add ranking column
 
+            # Add product link column
+            sorted_trend_data['Product Link'] = sorted_trend_data['id'].apply(get_pricecharting_link)
+
             # Remove the index column manually before displaying the table
             sorted_trend_data = sorted_trend_data.reset_index(drop=True)
 
             # Render table without the rogue column
-            table = sorted_trend_data.head(10)[['Ranking', 'product-name', 'console-name'] + additional_columns + [sort_column]].rename(
+            table = sorted_trend_data.head(10)[['Ranking', 'product-name', 'console-name'] + additional_columns + [sort_column, 'Product Link']].rename(
                 columns={
                     'Ranking': 'Rank',
                     'product-name': 'Card Name',
@@ -121,9 +128,12 @@ def render_trends_page(filters):
                     'psa-10-price_new': 'New Price',
                     'sales-volume_old': 'Previous Sales',
                     'sales-volume_new': 'New Sales',
-                    sort_column: '% Change'
+                    sort_column: '% Change',
+                    'Product Link': 'PriceCharting Link'
                 }
             ).reset_index(drop=True)  # Drop index again after renaming columns
+
+            # Display the table
             st.table(table)
 
         # Render tables
@@ -142,3 +152,24 @@ def render_trends_page(filters):
 
     except Exception as e:
         st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
+
+# Sidebar Dropdowns for Date Selection
+data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
+data_files.sort(reverse=True)
+
+# Populate the drop-downs with available dates
+file_names = [f.split("_")[2] for f in data_files]  # Extract the date from the filename
+selected_files = st.selectbox("Select the most recent data set", file_names, index=0), st.selectbox("Select the previous data set", file_names, index=1)
+
+# Add the filters and render the trends page
+filters = {
+    "min_psa_price": 0.0,
+    "max_psa_price": 1000.0,
+    "min_loose_price": 0.0,
+    "max_loose_price": 1000.0,
+    "min_sales": 0,
+    "selected_years": list(range(1999, 2026)),
+    "selected_sets": []  # Leave empty for no set filter
+}
+
+render_trends_page(filters)
