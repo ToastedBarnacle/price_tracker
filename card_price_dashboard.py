@@ -57,7 +57,13 @@ filtered_df = df[
     (df['release-year'].isin(selected_years))
 ]
 
-# Format financial columns
+# Preserve numeric columns for sorting and plotting
+numeric_filtered_df = filtered_df.copy()
+numeric_filtered_df['loose-price'] = pd.to_numeric(df['loose-price'], errors='coerce')
+numeric_filtered_df['psa-10-price'] = pd.to_numeric(df['psa-10-price'], errors='coerce')
+numeric_filtered_df['market-cap'] = pd.to_numeric(df['market-cap'], errors='coerce')
+
+# Format financial columns for display purposes
 def format_currency(value):
     return f"${value:,.2f}" if pd.notnull(value) else "N/A"
 
@@ -68,9 +74,6 @@ filtered_df['loose-price'] = filtered_df['loose-price'].apply(format_currency)
 filtered_df['psa-10-price'] = filtered_df['psa-10-price'].apply(format_currency)
 filtered_df['market-cap'] = filtered_df['market-cap'].apply(format_currency)
 filtered_df['sales-volume'] = filtered_df['sales-volume'].apply(format_sales)
-
-# Add ranks for the tables
-filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
 
 # Function to generate an HTML table with clickable links
 def render_table_with_links(df, columns, url_column):
@@ -103,8 +106,7 @@ if selected_page == "PSA Card Market Cap":
     # Top Cards by Market Cap
     st.subheader("Top 20 Cards by Market Cap")
     top_market_cap = (
-        filtered_df.copy()
-        .sort_values(by="market-cap", ascending=False, key=lambda x: pd.to_numeric(x, errors='coerce'))
+        numeric_filtered_df.sort_values(by="market-cap", ascending=False)
         .head(20)
         .reset_index(drop=True)
     )
@@ -121,7 +123,7 @@ if selected_page == "PSA Card Market Cap":
     # Top Cards by Profitability
     st.subheader("Top 20 Cards by Profitability")
     top_profitability = (
-        filtered_df.sort_values(by="grading-profitability", ascending=False)
+        numeric_filtered_df.sort_values(by="grading-profitability", ascending=False)
         .head(20)
         .reset_index(drop=True)
     )
@@ -138,9 +140,9 @@ if selected_page == "PSA Card Market Cap":
     # Scatterplot Visualization
     st.subheader("Loose Price vs PSA 10 Graded Price")
     scatter_fig = px.scatter(
-        filtered_df,
-        x=pd.to_numeric(df['loose-price'], errors='coerce'),
-        y=pd.to_numeric(df['psa-10-price'], errors='coerce'),
+        numeric_filtered_df,
+        x="loose-price",
+        y="psa-10-price",
         hover_name="product-name",
         hover_data=["console-name", "product-url"],
         title="Loose Price vs PSA 10 Graded Price",
