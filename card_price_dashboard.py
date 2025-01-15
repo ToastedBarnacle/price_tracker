@@ -63,12 +63,7 @@ numeric_filtered_df['loose-price'] = pd.to_numeric(df['loose-price'], errors='co
 numeric_filtered_df['psa-10-price'] = pd.to_numeric(df['psa-10-price'], errors='coerce')
 numeric_filtered_df['market-cap'] = pd.to_numeric(df['market-cap'], errors='coerce')
 
-# Calculate Grading Profitability as a Percentage
-numeric_filtered_df['grading-profitability-percent'] = (
-    numeric_filtered_df['grading-profitability'] / (numeric_filtered_df['loose-price'] + 15)
-)
-
-# Format columns for display
+# Format financial columns for display purposes
 def format_currency(value):
     return f"${value:,.2f}" if pd.notnull(value) else "N/A"
 
@@ -82,7 +77,9 @@ filtered_df['loose-price'] = filtered_df['loose-price'].apply(format_currency)
 filtered_df['psa-10-price'] = filtered_df['psa-10-price'].apply(format_currency)
 filtered_df['market-cap'] = filtered_df['market-cap'].apply(format_currency)
 filtered_df['sales-volume'] = filtered_df['sales-volume'].apply(format_sales)
-filtered_df['grading-profitability'] = numeric_filtered_df['grading-profitability-percent'].apply(format_percentage)
+
+# Add ranks for the tables
+filtered_df['Ranking'] = filtered_df['market-cap'].rank(ascending=False, method="dense")
 
 # Function to generate an HTML table with clickable links
 def render_table_with_links(df, columns, url_column):
@@ -131,17 +128,20 @@ if selected_page == "PSA Card Market Cap":
 
     # Top Cards by Profitability
     st.subheader("Top 20 Cards by Profitability")
+    numeric_filtered_df['profitability-percent'] = (
+        numeric_filtered_df['grading-profitability'] / (numeric_filtered_df['loose-price'] + 15)
+    )
     top_profitability = (
-        numeric_filtered_df.sort_values(by="grading-profitability-percent", ascending=False)
+        numeric_filtered_df.sort_values(by="profitability-percent", ascending=False)
         .head(20)
         .reset_index(drop=True)
     )
     top_profitability['Ranking'] = top_profitability.index + 1
-    top_profitability['grading-profitability-percent'] = top_profitability['grading-profitability-percent'].apply(format_percentage)
+    top_profitability['profitability-percent'] = top_profitability['profitability-percent'].apply(format_percentage)
     st.markdown(
         render_table_with_links(
             top_profitability,
-            ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'grading-profitability'],
+            ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'profitability-percent'],
             'product-url'
         ),
         unsafe_allow_html=True
