@@ -7,7 +7,7 @@ import os
 st.set_page_config(page_title="CardMarketCap.App", layout="wide")
 
 # Load the newest data file
-DATA_FOLDER = "Data"
+DATA_FOLDER = "Data"  # Correctly capitalized folder name
 
 # Ensure the data folder exists
 if not os.path.exists(DATA_FOLDER):
@@ -17,7 +17,7 @@ if not os.path.exists(DATA_FOLDER):
 
 # List all data files
 data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
-data_files.sort(reverse=True)
+data_files.sort(reverse=True)  # Sort files by name (newest date first)
 
 # Check for available files
 if not data_files:
@@ -70,32 +70,30 @@ def format_currency(value):
 def format_sales(value):
     return f"{value:,}" if pd.notnull(value) else "N/A"
 
-filtered_df['loose-price-display'] = numeric_filtered_df['loose-price'].apply(format_currency)
-filtered_df['psa-10-price-display'] = numeric_filtered_df['psa-10-price'].apply(format_currency)
-filtered_df['market-cap-display'] = numeric_filtered_df['market-cap'].apply(format_currency)
+filtered_df['loose-price'] = filtered_df['loose-price'].apply(format_currency)
+filtered_df['psa-10-price'] = filtered_df['psa-10-price'].apply(format_currency)
+filtered_df['market-cap'] = filtered_df['market-cap'].apply(format_currency)
 filtered_df['sales-volume'] = filtered_df['sales-volume'].apply(format_sales)
 
-# Ensure all columns used in the table exist
+# Function to generate an HTML table with clickable links
 def render_table_with_links(df, columns, url_column):
-    table_html = df.copy()
-    if url_column not in table_html.columns:
-        st.error(f"Missing column: {url_column}. Please check the DataFrame.")
-        st.stop()
+    table_html = df[columns + [url_column]].copy()
     table_html[url_column] = table_html[url_column].apply(
         lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>'
     )
-    table_html = table_html[columns + [url_column]].rename(columns={
+    table_html = table_html.rename(columns={
         "Ranking": "Ranking",
         "product-name": "Card",
         "console-name": "Set",
-        "loose-price-display": "Raw Price",
-        "psa-10-price-display": "PSA 10 Price",
+        "loose-price": "Raw Price",
+        "psa-10-price": "PSA 10 Price",
         "sales-volume": "Sales/Year",
-        "market-cap-display": "Market Cap",
+        "market-cap": "Market Cap",
         "grading-profitability": "Grading Profitability",
         "product-url": "PriceCharting Link"
     })
-    return table_html.to_html(escape=False, index=False)
+    table_html = table_html.to_html(escape=False, index=False)
+    return table_html
 
 # Main Dashboard
 st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
@@ -116,8 +114,44 @@ if selected_page == "PSA Card Market Cap":
     st.markdown(
         render_table_with_links(
             top_market_cap,
-            ['Ranking', 'product-name', 'console-name', 'loose-price-display', 'psa-10-price-display', 'sales-volume', 'market-cap-display'],
+            ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap'],
             'product-url'
         ),
         unsafe_allow_html=True
     )
+
+    # Top Cards by Profitability
+    st.subheader("Top 20 Cards by Profitability")
+    top_profitability = (
+        numeric_filtered_df.sort_values(by="grading-profitability", ascending=False)
+        .head(20)
+        .reset_index(drop=True)
+    )
+    top_profitability['Ranking'] = top_profitability.index + 1
+    st.markdown(
+        render_table_with_links(
+            top_profitability,
+            ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'grading-profitability'],
+            'product-url'
+        ),
+        unsafe_allow_html=True
+    )
+
+    # Scatterplot Visualization
+    st.subheader("Loose Price vs PSA 10 Graded Price")
+    scatter_fig = px.scatter(
+        numeric_filtered_df,
+        x="loose-price",
+        y="psa-10-price",
+        hover_name="product-name",
+        hover_data=["console-name", "product-url"],
+        title="Loose Price vs PSA 10 Graded Price",
+        labels={"loose-price": "Loose Price ($)", "psa-10-price": "PSA 10 Price ($)"},
+        template="plotly_white",
+    )
+    scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
+    st.plotly_chart(scatter_fig, use_container_width=True)
+
+elif selected_page == "PSA Card Trends":
+    st.header("PSA Card Trends")
+    st.write("This page is under construction.")
