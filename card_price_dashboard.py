@@ -83,26 +83,6 @@ filtered_df['formatted-psa-10-price'] = filtered_df['psa-10-price'].apply(lambda
 filtered_df['formatted-market-cap'] = filtered_df['market-cap'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
 filtered_df['sales-volume'] = filtered_df['sales-volume'].apply(format_sales)
 
-# Function to generate an HTML table with clickable links
-def render_table_with_links(df, columns, url_column):
-    table_html = df[columns + [url_column]].copy()
-    table_html[url_column] = table_html[url_column].apply(
-        lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>'
-    )
-    table_html = table_html.rename(columns={
-        "Ranking": "Ranking",
-        "product-name": "Card",
-        "console-name": "Set",
-        "formatted-loose-price": "Raw Price",
-        "formatted-psa-10-price": "PSA 10 Price",
-        "sales-volume": "Sales/Year",
-        "formatted-market-cap": "Market Cap",
-        "grading-profitability": "Grading Profitability",
-        "product-url": "PriceCharting Link"
-    })
-    table_html = table_html.to_html(escape=False, index=False)
-    return table_html
-
 # Main Dashboard
 st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
 selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"], horizontal=True)
@@ -119,51 +99,12 @@ if selected_page == "PSA Card Market Cap":
         .reset_index(drop=True)
     )
     top_market_cap['Ranking'] = top_market_cap.index + 1
-    st.markdown(
-        render_table_with_links(
-            top_market_cap,
-            ['Ranking', 'product-name', 'console-name', 'formatted-loose-price', 'formatted-psa-10-price', 'sales-volume', 'formatted-market-cap'],
-            'product-url'
-        ),
-        unsafe_allow_html=True
-    )
-
-    # Top Cards by Profitability
-    st.subheader("Top 20 Cards by Profitability")
-    top_profitability = (
-        filtered_df.sort_values(by="grading-profitability-percent", ascending=False)  # Sort by numeric profitability
-        .head(20)
-        .reset_index(drop=True)
-    )
-    top_profitability['Ranking'] = top_profitability.index + 1
-    st.markdown(
-        render_table_with_links(
-            top_profitability,
-            ['Ranking', 'product-name', 'console-name', 'formatted-loose-price', 'formatted-psa-10-price', 'sales-volume', 'grading-profitability'],
-            'product-url'
-        ),
-        unsafe_allow_html=True
-    )
-
-    # Scatterplot Visualization
-    st.subheader("Loose Price vs PSA 10 Graded Price")
-    scatter_fig = px.scatter(
-        filtered_df,
-        x="loose-price",
-        y="psa-10-price",
-        hover_name="product-name",
-        hover_data=["console-name", "product-url"],
-        title="Loose Price vs PSA 10 Graded Price",
-        labels={"loose-price": "Loose Price ($)", "psa-10-price": "PSA 10 Price ($)"},
-        template="plotly_white",
-    )
-    scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
-    st.plotly_chart(scatter_fig, use_container_width=True)
+    st.table(top_market_cap[['Ranking', 'product-name', 'console-name', 'formatted-loose-price', 'formatted-psa-10-price', 'sales-volume', 'formatted-market-cap']])
 
 elif selected_page == "PSA Card Trends":
     try:
         import psa_trends
-        psa_trends.render_trends_page(newest_df, previous_df)
+        psa_trends.render_trends_page()
     except ModuleNotFoundError:
         st.write("The PSA Trends module is not yet available. Please upload `psa_trends.py` to enable this feature.")
     except Exception as e:
