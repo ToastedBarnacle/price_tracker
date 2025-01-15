@@ -22,6 +22,11 @@ def load_data_files():
     newest_df = pd.read_csv(newest_file)
     previous_df = pd.read_csv(previous_file)
 
+    # Add the release-year column dynamically
+    for df in [newest_df, previous_df]:
+        if 'release-date' in df.columns:
+            df['release-year'] = pd.to_datetime(df['release-date'], errors='coerce').dt.year.fillna(0).astype(int)
+
     return newest_df, previous_df
 
 def calculate_trends(newest_df, previous_df, filters):
