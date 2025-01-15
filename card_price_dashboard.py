@@ -48,6 +48,10 @@ min_sales = st.sidebar.number_input("Minimum Sales Volume", min_value=0, value=0
 years = list(range(1999, 2026))
 selected_years = st.sidebar.multiselect("Select Release Years", options=years, default=years)
 
+# New: Filter for console-name (Set)
+console_names = df['console-name'].dropna().unique().tolist()
+selected_sets = st.sidebar.multiselect("Select Set", options=console_names, default=console_names)
+
 # Apply filters
 filtered_df = df[
     (df['psa-10-price'] >= min_psa_price) &
@@ -55,7 +59,8 @@ filtered_df = df[
     (df['loose-price'] >= min_loose_price) &
     (df['loose-price'] <= max_loose_price) &
     (df['sales-volume'] >= min_sales) &
-    (df['release-year'].isin(selected_years))
+    (df['release-year'].isin(selected_years)) &
+    (df['console-name'].isin(selected_sets))
 ]
 
 # Format columns for display
@@ -170,7 +175,8 @@ elif selected_page == "PSA Card Trends":
             "min_loose_price": min_loose_price,
             "max_loose_price": max_loose_price,
             "min_sales": min_sales,
-            "selected_years": selected_years
+            "selected_years": selected_years,
+            "selected_sets": selected_sets
         }
         psa_trends.render_trends_page(filters)
     except ModuleNotFoundError:
