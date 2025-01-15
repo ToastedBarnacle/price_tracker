@@ -70,12 +70,13 @@ def format_percentage(value):
     """Format value as a percentage with 2 decimal places."""
     return f"{value:.2%}" if pd.notnull(value) else "N/A"
 
-# Recalculate and format grading profitability as a percentage
-filtered_df['grading-profitability'] = (
+# Recalculate grading profitability as a numeric percentage
+filtered_df['grading-profitability-percent'] = (
     filtered_df['grading-profitability'] / (pd.to_numeric(filtered_df['loose-price'], errors='coerce') + 15)
-).apply(format_percentage)
+)
 
-# Format other columns
+# Format columns for display
+filtered_df['grading-profitability'] = filtered_df['grading-profitability-percent'].apply(format_percentage)
 filtered_df['formatted-loose-price'] = filtered_df['loose-price'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
 filtered_df['formatted-psa-10-price'] = filtered_df['psa-10-price'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
 filtered_df['formatted-market-cap'] = filtered_df['market-cap'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
@@ -129,7 +130,7 @@ if selected_page == "PSA Card Market Cap":
     # Top Cards by Profitability
     st.subheader("Top 20 Cards by Profitability")
     top_profitability = (
-        filtered_df.sort_values(by="grading-profitability", ascending=False)
+        filtered_df.sort_values(by="grading-profitability-percent", ascending=False)  # Sort by numeric profitability
         .head(20)
         .reset_index(drop=True)
     )
