@@ -118,7 +118,7 @@ def render_trends_page(filters):
                     'sales-volume_new': 'New Sales',
                     sort_column: '% Change'
                 }
-            ).reset_index(drop=True)  # Explicitly remove the index column
+            ).reset_index(drop=True)  # Remove the index column explicitly
             st.table(table)
 
         # Render tables
