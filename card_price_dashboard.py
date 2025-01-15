@@ -66,6 +66,16 @@ def format_sales(value):
     """Format value with commas for large numbers."""
     return f"{value:,}" if pd.notnull(value) else "N/A"
 
+def format_percentage(value):
+    """Format value as a percentage with 2 decimal places."""
+    return f"{value:.2%}" if pd.notnull(value) else "N/A"
+
+# Recalculate and format grading profitability as a percentage
+filtered_df['grading-profitability'] = (
+    filtered_df['grading-profitability'] / (pd.to_numeric(filtered_df['loose-price'], errors='coerce') + 15)
+).apply(format_percentage)
+
+# Format other columns
 filtered_df['formatted-loose-price'] = filtered_df['loose-price'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
 filtered_df['formatted-psa-10-price'] = filtered_df['psa-10-price'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
 filtered_df['formatted-market-cap'] = filtered_df['market-cap'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
