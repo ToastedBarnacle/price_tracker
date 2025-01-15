@@ -26,7 +26,7 @@ def load_data_files():
 
 def calculate_trends(newest_df, previous_df):
     """Calculate trends by comparing the newest and previous datasets."""
-    trend_data = newest_df[['id', 'product-name', 'loose-price', 'psa-10-price', 'sales-volume']].merge(
+    trend_data = newest_df[['id', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume']].merge(
         previous_df[['id', 'loose-price', 'psa-10-price', 'sales-volume']],
         on='id',
         suffixes=('_new', '_old')
@@ -70,9 +70,11 @@ def render_trends_page():
             )  # Convert percentages back to numeric
             sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=ascending)
             sorted_trend_data['Ranking'] = range(1, len(sorted_trend_data) + 1)  # Add ranking column
-            table = sorted_trend_data.head(10)[['Ranking', 'product-name', sort_column]].rename(
+            table = sorted_trend_data.head(10)[['Ranking', 'product-name', 'console-name', sort_column]].rename(
                 columns={
+                    'Ranking': 'Rank',
                     'product-name': 'Card Name',
+                    'console-name': 'Set',
                     sort_column: '% Change'
                 }
             )
