@@ -103,7 +103,8 @@ if selected_page == "PSA Card Market Cap":
     # Top Cards by Market Cap
     st.subheader("Top 20 Cards by Market Cap")
     top_market_cap = (
-        filtered_df.sort_values(by="market-cap", ascending=False)
+        filtered_df.copy()
+        .sort_values(by="market-cap", ascending=False, key=lambda x: pd.to_numeric(x, errors='coerce'))
         .head(20)
         .reset_index(drop=True)
     )
