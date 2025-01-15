@@ -163,7 +163,16 @@ if selected_page == "PSA Card Market Cap":
 elif selected_page == "PSA Card Trends":
     try:
         import psa_trends
-        psa_trends.render_trends_page()
+        # Define filters to pass
+        filters = {
+            "min_psa_price": min_psa_price,
+            "max_psa_price": max_psa_price,
+            "min_loose_price": min_loose_price,
+            "max_loose_price": max_loose_price,
+            "min_sales": min_sales,
+            "selected_years": selected_years
+        }
+        psa_trends.render_trends_page(filters)
     except ModuleNotFoundError:
         st.write("The PSA Trends module is not yet available. Please upload `psa_trends.py` to enable this feature.")
     except Exception as e:
