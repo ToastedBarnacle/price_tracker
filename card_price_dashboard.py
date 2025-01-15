@@ -7,7 +7,7 @@ import os
 st.set_page_config(page_title="CardMarketCap.App", layout="wide")
 
 # Load the newest data file
-DATA_FOLDER = "Data"  # Correctly capitalized folder name
+DATA_FOLDER = "Data"  # Ensure the correct capitalization of your folder name
 
 # Ensure the data folder exists
 if not os.path.exists(DATA_FOLDER):
@@ -15,14 +15,22 @@ if not os.path.exists(DATA_FOLDER):
     st.error(f"Data folder '{DATA_FOLDER}' does not exist. Please upload CSV files to this folder.")
     st.stop()
 
-# List all data files
-data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
-data_files.sort(reverse=True)  # Sort files by name (newest date first)
+# List and sort all data files by actual date from filename
+data_files = [
+    f for f in os.listdir(DATA_FOLDER)
+    if f.startswith("filtered_price_data_") and f.endswith(".csv")
+]
 
-# Check for available files
 if not data_files:
     st.error(f"No data files found in the '{DATA_FOLDER}' folder. Please upload at least one file.")
     st.stop()
+
+# Extract the dates from filenames and sort by date
+data_files = sorted(
+    data_files,
+    key=lambda x: pd.to_datetime(x.split('_')[-1].replace('.csv', ''), format='%Y_%m_%d'),
+    reverse=True
+)
 
 # Load the newest data file
 DATA_FILE = os.path.join(DATA_FOLDER, data_files[0])
