@@ -33,7 +33,7 @@ def calculate_trends(newest_df, previous_df, filters):
     """Calculate trends by comparing the newest and previous datasets, with filtering."""
     # Apply filters to both dataframes
     def apply_filters(df, filters):
-        return df[
+        filtered_df = df[
             (df['psa-10-price'] >= filters['min_psa_price']) &
             (df['psa-10-price'] <= filters['max_psa_price']) &
             (df['loose-price'] >= filters['min_loose_price']) &
@@ -41,6 +41,9 @@ def calculate_trends(newest_df, previous_df, filters):
             (df['sales-volume'] >= filters['min_sales']) &
             (df['release-year'].isin(filters['selected_years']))
         ]
+        if filters['selected_sets']:
+            filtered_df = filtered_df[filtered_df['console-name'].isin(filters['selected_sets'])]
+        return filtered_df
 
     newest_df = apply_filters(newest_df, filters)
     previous_df = apply_filters(previous_df, filters)
@@ -77,9 +80,9 @@ def render_trends_page(filters):
         trend_data['psa-10-price-change'] = trend_data['psa-10-price-change'].apply(format_percentage)
         trend_data['sales-volume-change'] = trend_data['sales-volume-change'].apply(format_percentage)
 
-        # Add toggle button for increase/decrease trends
-        trend_type = st.radio("Select Trend Type", ["Increase", "Decrease"], horizontal=True)
-        ascending = trend_type == "Decrease"
+        # Add toggle button for gainers/losers
+        trend_type = st.radio("Select Trend Type", ["Top Gainers", "Top Losers"], horizontal=True)
+        ascending = trend_type == "Top Losers"
 
         # Helper function to render a trends table
         def render_table(title, column_name, sort_column):
