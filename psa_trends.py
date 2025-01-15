@@ -121,7 +121,7 @@ def render_trends_page(filters):
             ).reset_index(drop=True)  # Remove the index column
             st.table(table)
 
-           # Render tables
+        # Render tables
         render_table(
             "Top 10 Cards by Loose Price Change", "loose-price-change", 'loose-price-change',
             ['loose-price_old', 'loose-price_new']
