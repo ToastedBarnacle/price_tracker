@@ -21,14 +21,19 @@ data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price
 data_files.sort(reverse=True)  # Sort files by name (newest date first)
 
 # Check for available files
-if not data_files:
-    st.error(f"No data files found in the '{DATA_FOLDER}' folder. Please upload at least one file.")
+if len(data_files) < 2:
+    st.error(f"At least two data files are required in the '{DATA_FOLDER}' folder for trends analysis.")
     st.stop()
 
-# Load the newest data file
-DATA_FILE = os.path.join(DATA_FOLDER, data_files[0])
-df = pd.read_csv(DATA_FILE)
-st.sidebar.info(f"Loaded data file: {data_files[0]}")
+# Load the newest and previous data files
+NEWEST_DATA_FILE = os.path.join(DATA_FOLDER, data_files[0])
+PREVIOUS_DATA_FILE = os.path.join(DATA_FOLDER, data_files[1])
+
+newest_df = pd.read_csv(NEWEST_DATA_FILE)
+previous_df = pd.read_csv(PREVIOUS_DATA_FILE)
+
+st.sidebar.info(f"Newest data file: {data_files[0]}")
+st.sidebar.info(f"Previous data file: {data_files[1]}")
 
 # Ensure all necessary columns exist and compute missing ones dynamically
 df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
