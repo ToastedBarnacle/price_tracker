@@ -161,10 +161,10 @@ if selected_page == "PSA Card Market Cap":
     st.plotly_chart(scatter_fig, use_container_width=True)
 
 elif selected_page == "PSA Card Trends":
-    st.header("PSA Card Trends")
     try:
-        # Dynamically import the psa_trends module
-        psa_trends = import_module('psa_trends')
-        psa_trends.render_trends_page()
+        import psa_trends
+        psa_trends.render_trends_page(newest_df, previous_df)
     except ModuleNotFoundError:
         st.write("The PSA Trends module is not yet available. Please upload `psa_trends.py` to enable this feature.")
+    except Exception as e:
+        st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
