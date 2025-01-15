@@ -92,13 +92,10 @@ def render_table_with_links(df, columns, url_column):
     table_html = table_html.to_html(escape=False, index=False)
     return table_html
 
-# Render header after initialization
+# Main Dashboard
 st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
-
-# Navigation
 selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"], horizontal=True)
 
-# Pages
 if selected_page == "PSA Card Market Cap":
     st.header("PSA 10 Card Market Cap Dashboard")
     st.metric("Total Cards", len(filtered_df))
@@ -110,7 +107,7 @@ if selected_page == "PSA Card Market Cap":
         .head(20)
         .reset_index(drop=True)
     )
-    top_market_cap['Ranking'] = range(1, len(top_market_cap) + 1)
+    top_market_cap['Ranking'] = top_market_cap.index + 1
     st.markdown(
         render_table_with_links(
             top_market_cap,
@@ -120,12 +117,29 @@ if selected_page == "PSA Card Market Cap":
         unsafe_allow_html=True
     )
 
+    # Top Cards by Profitability
+    st.subheader("Top 20 Cards by Profitability")
+    top_profitability = (
+        filtered_df.sort_values(by="grading-profitability", ascending=False)
+        .head(20)
+        .reset_index(drop=True)
+    )
+    top_profitability['Ranking'] = top_profitability.index + 1
+    st.markdown(
+        render_table_with_links(
+            top_profitability,
+            ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'grading-profitability'],
+            'product-url'
+        ),
+        unsafe_allow_html=True
+    )
+
     # Scatterplot Visualization
     st.subheader("Loose Price vs PSA 10 Graded Price")
     scatter_fig = px.scatter(
         filtered_df,
-        x="loose-price",
-        y="psa-10-price",
+        x=pd.to_numeric(df['loose-price'], errors='coerce'),
+        y=pd.to_numeric(df['psa-10-price'], errors='coerce'),
         hover_name="product-name",
         hover_data=["console-name", "product-url"],
         title="Loose Price vs PSA 10 Graded Price",
