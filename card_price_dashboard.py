@@ -48,9 +48,9 @@ min_sales = st.sidebar.number_input("Minimum Sales Volume", min_value=0, value=0
 years = list(range(1999, 2026))
 selected_years = st.sidebar.multiselect("Select Release Years", options=years, default=years)
 
-# New: Filter for console-name (Set)
+# New: Filter for console-name (Set) with no default selection
 console_names = df['console-name'].dropna().unique().tolist()
-selected_sets = st.sidebar.multiselect("Select Set", options=console_names, default=console_names)
+selected_sets = st.sidebar.multiselect("Select Set", options=console_names, default=[])
 
 # Apply filters
 filtered_df = df[
@@ -60,7 +60,7 @@ filtered_df = df[
     (df['loose-price'] <= max_loose_price) &
     (df['sales-volume'] >= min_sales) &
     (df['release-year'].isin(selected_years)) &
-    (df['console-name'].isin(selected_sets))
+    (df['console-name'].isin(selected_sets) if selected_sets else True)  # Allow all if no sets are selected
 ]
 
 # Format columns for display
