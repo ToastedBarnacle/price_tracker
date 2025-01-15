@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
+from importlib import import_module
 
 # Set page title and layout
 st.set_page_config(page_title="CardMarketCap.App", layout="wide")
@@ -47,47 +48,8 @@ def prepare_data(df):
 newest_df = prepare_data(newest_df)
 previous_df = prepare_data(previous_df)
 
-# Calculate trends
-def calculate_trends(newest, previous):
-    trend_data = newest[['id', 'product-name', 'loose-price', 'psa-10-price', 'sales-volume']].merge(
-        previous[['id', 'loose-price', 'psa-10-price', 'sales-volume']],
-        on='id',
-        suffixes=('_new', '_old')
-    )
-    trend_data['loose-price-change'] = ((trend_data['loose-price_new'] - trend_data['loose-price_old']) / trend_data['loose-price_old']) * 100
-    trend_data['psa-10-price-change'] = ((trend_data['psa-10-price_new'] - trend_data['psa-10-price_old']) / trend_data['psa-10-price_old']) * 100
-    trend_data['sales-volume-change'] = ((trend_data['sales-volume_new'] - trend_data['sales-volume_old']) / trend_data['sales-volume_old']) * 100
-    return trend_data
-
-trend_data = calculate_trends(newest_df, previous_df)
-
-# Format trends data
-def format_percentage(value):
-    return f"{value:.2f}%" if pd.notnull(value) else "N/A"
-
-trend_data['loose-price-change'] = trend_data['loose-price-change'].apply(format_percentage)
-trend_data['psa-10-price-change'] = trend_data['psa-10-price-change'].apply(format_percentage)
-trend_data['sales-volume-change'] = trend_data['sales-volume-change'].apply(format_percentage)
-
-# Function to display trends
-def display_trends():
-    st.subheader("Top 10 Cards by Loose Price Change")
-    loose_price_trend = trend_data.sort_values(by='loose-price-change', ascending=False).head(10)
-    st.table(loose_price_trend[['product-name', 'loose-price-change']])
-
-    st.subheader("Top 10 Cards by PSA 10 Price Change")
-    psa_price_trend = trend_data.sort_values(by='psa-10-price-change', ascending=False).head(10)
-    st.table(psa_price_trend[['product-name', 'psa-10-price-change']])
-
-    st.subheader("Top 10 Cards by Sales Volume Change")
-    sales_volume_trend = trend_data.sort_values(by='sales-volume-change', ascending=False).head(10)
-    st.table(sales_volume_trend[['product-name', 'sales-volume-change']])
-
-# Navigation
-st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
-selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"], horizontal=True)
-
-if selected_page == "PSA Card Market Cap":
+# Function to render the main dashboard
+def render_market_cap_dashboard():
     st.header("PSA 10 Card Market Cap Dashboard")
     st.metric("Total Cards", len(newest_df))
 
@@ -101,6 +63,20 @@ if selected_page == "PSA Card Market Cap":
     top_market_cap['Ranking'] = top_market_cap.index + 1
     st.table(top_market_cap[['Ranking', 'product-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap']])
 
+# Function to render the trends page (placeholder for modularized approach)
+def render_trends_page():
+    try:
+        psa_trends = import_module('psa_trends')
+        psa_trends.render_trends_page(newest_df, previous_df)
+    except ModuleNotFoundError:
+        st.header("PSA Card Trends")
+        st.write("The PSA Trends module is not yet available. Please upload `psa_trends.py` to enable this feature.")
+
+# Navigation
+st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
+selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"], horizontal=True)
+
+if selected_page == "PSA Card Market Cap":
+    render_market_cap_dashboard()
 elif selected_page == "PSA Card Trends":
-    st.header("PSA Card Trends")
-    display_trends()
+    render_trends_page()
