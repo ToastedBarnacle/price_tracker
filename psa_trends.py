@@ -24,8 +24,23 @@ def load_data_files():
 
     return newest_df, previous_df
 
-def calculate_trends(newest_df, previous_df):
-    """Calculate trends by comparing the newest and previous datasets."""
+def calculate_trends(newest_df, previous_df, filters):
+    """Calculate trends by comparing the newest and previous datasets, with filtering."""
+    # Apply filters to both dataframes
+    def apply_filters(df, filters):
+        return df[
+            (df['psa-10-price'] >= filters['min_psa_price']) &
+            (df['psa-10-price'] <= filters['max_psa_price']) &
+            (df['loose-price'] >= filters['min_loose_price']) &
+            (df['loose-price'] <= filters['max_loose_price']) &
+            (df['sales-volume'] >= filters['min_sales']) &
+            (df['release-year'].isin(filters['selected_years']))
+        ]
+
+    newest_df = apply_filters(newest_df, filters)
+    previous_df = apply_filters(previous_df, filters)
+
+    # Merge and calculate trends
     trend_data = newest_df[['id', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume']].merge(
         previous_df[['id', 'loose-price', 'psa-10-price', 'sales-volume']],
         on='id',
@@ -42,11 +57,11 @@ def calculate_trends(newest_df, previous_df):
 
     return trend_data
 
-def render_trends_page():
+def render_trends_page(filters):
     """Render the PSA Trends page."""
     try:
         newest_df, previous_df = load_data_files()
-        trend_data = calculate_trends(newest_df, previous_df)
+        trend_data = calculate_trends(newest_df, previous_df, filters)
 
         # Formatting for display
         def format_percentage(value):
