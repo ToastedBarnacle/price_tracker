@@ -72,6 +72,12 @@ def render_trends_page(filters):
         trend_data = calculate_trends(newest_df, previous_df, filters)
 
         # Formatting for display
+        def format_currency(value):
+            return f"${value:,.2f}" if pd.notnull(value) else "N/A"
+
+        def format_sales(value):
+            return f"{int(value):,}" if pd.notnull(value) else "N/A"
+
         def format_percentage(value):
             return f"{value:.2f}%" if pd.notnull(value) else "N/A"
 
@@ -79,13 +85,19 @@ def render_trends_page(filters):
         trend_data['loose-price-change'] = trend_data['loose-price-change'].apply(format_percentage)
         trend_data['psa-10-price-change'] = trend_data['psa-10-price-change'].apply(format_percentage)
         trend_data['sales-volume-change'] = trend_data['sales-volume-change'].apply(format_percentage)
+        trend_data['loose-price_new'] = trend_data['loose-price_new'].apply(format_currency)
+        trend_data['loose-price_old'] = trend_data['loose-price_old'].apply(format_currency)
+        trend_data['psa-10-price_new'] = trend_data['psa-10-price_new'].apply(format_currency)
+        trend_data['psa-10-price_old'] = trend_data['psa-10-price_old'].apply(format_currency)
+        trend_data['sales-volume_new'] = trend_data['sales-volume_new'].apply(format_sales)
+        trend_data['sales-volume_old'] = trend_data['sales-volume_old'].apply(format_sales)
 
         # Add toggle button for gainers/losers
         trend_type = st.radio("Select Trend Type", ["Top Gainers", "Top Losers"], horizontal=True)
         ascending = trend_type == "Top Losers"
 
         # Helper function to render a trends table
-        def render_table(title, column_name, sort_column):
+        def render_table(title, column_name, sort_column, additional_columns):
             st.subheader(title)
             sorted_trend_data = trend_data.copy()
             sorted_trend_data[sort_column] = pd.to_numeric(
@@ -93,20 +105,30 @@ def render_trends_page(filters):
             )  # Convert percentages back to numeric
             sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=ascending)
             sorted_trend_data['Ranking'] = range(1, len(sorted_trend_data) + 1)  # Add ranking column
-            table = sorted_trend_data.head(10)[['Ranking', 'product-name', 'console-name', sort_column]].rename(
+            table = sorted_trend_data.head(10)[['Ranking', 'product-name', 'console-name'] + additional_columns + [sort_column]].rename(
                 columns={
                     'Ranking': 'Rank',
                     'product-name': 'Card Name',
                     'console-name': 'Set',
-                    sort_column: '% Change'
+                    sort_column: '% Change',
+                    **{col: col.replace('_new', 'New').replace('_old', 'Last') for col in additional_columns}
                 }
             )
             st.table(table)
 
         # Render tables
-        render_table("Top 10 Cards by Loose Price Change", "loose-price-change", 'loose-price-change')
-        render_table("Top 10 Cards by PSA 10 Price Change", "psa-10-price-change", 'psa-10-price-change')
-        render_table("Top 10 Cards by Sales Volume Change", "sales-volume-change", 'sales-volume-change')
+        render_table(
+            "Top 10 Cards by Loose Price Change", "loose-price-change", 'loose-price-change',
+            ['loose-price_old', 'loose-price_new']
+        )
+        render_table(
+            "Top 10 Cards by PSA 10 Price Change", "psa-10-price-change", 'psa-10-price-change',
+            ['psa-10-price_old', 'psa-10-price_new']
+        )
+        render_table(
+            "Top 10 Cards by Sales Volume Change", "sales-volume-change", 'sales-volume-change',
+            ['sales-volume_old', 'sales-volume_new']
+        )
 
     except Exception as e:
         st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
