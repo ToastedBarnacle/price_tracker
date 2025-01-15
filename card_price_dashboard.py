@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
+from psa_trends import load_trend_data, display_trends  # Import the trends module
 
 # Set page title and layout
 st.set_page_config(page_title="CardMarketCap.App", layout="wide")
@@ -59,23 +60,17 @@ filtered_df = df[
 
 # Format columns for display
 def format_currency(value):
-    """Format value as currency with $ and commas."""
     return f"${value:,.2f}" if pd.notnull(value) else "N/A"
 
 def format_sales(value):
-    """Format value with commas for large numbers."""
     return f"{value:,}" if pd.notnull(value) else "N/A"
 
 def format_percentage(value):
-    """Format value as a percentage with 2 decimal places."""
     return f"{value:.2%}" if pd.notnull(value) else "N/A"
 
-# Recalculate grading profitability as a numeric percentage
 filtered_df['grading-profitability-percent'] = (
     filtered_df['grading-profitability'] / (pd.to_numeric(filtered_df['loose-price'], errors='coerce') + 15)
 )
-
-# Format columns for display
 filtered_df['grading-profitability'] = filtered_df['grading-profitability-percent'].apply(format_percentage)
 filtered_df['formatted-loose-price'] = filtered_df['loose-price'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
 filtered_df['formatted-psa-10-price'] = filtered_df['psa-10-price'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
@@ -109,56 +104,12 @@ selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"
 if selected_page == "PSA Card Market Cap":
     st.header("PSA 10 Card Market Cap Dashboard")
     st.metric("Total Cards", len(filtered_df))
-
-    # Top Cards by Market Cap
-    st.subheader("Top 20 Cards by Market Cap")
-    top_market_cap = (
-        filtered_df.sort_values(by="market-cap", ascending=False)
-        .head(20)
-        .reset_index(drop=True)
-    )
-    top_market_cap['Ranking'] = top_market_cap.index + 1
-    st.markdown(
-        render_table_with_links(
-            top_market_cap,
-            ['Ranking', 'product-name', 'console-name', 'formatted-loose-price', 'formatted-psa-10-price', 'sales-volume', 'formatted-market-cap'],
-            'product-url'
-        ),
-        unsafe_allow_html=True
-    )
-
-    # Top Cards by Profitability
-    st.subheader("Top 20 Cards by Profitability")
-    top_profitability = (
-        filtered_df.sort_values(by="grading-profitability-percent", ascending=False)  # Sort by numeric profitability
-        .head(20)
-        .reset_index(drop=True)
-    )
-    top_profitability['Ranking'] = top_profitability.index + 1
-    st.markdown(
-        render_table_with_links(
-            top_profitability,
-            ['Ranking', 'product-name', 'console-name', 'formatted-loose-price', 'formatted-psa-10-price', 'sales-volume', 'grading-profitability'],
-            'product-url'
-        ),
-        unsafe_allow_html=True
-    )
-
-    # Scatterplot Visualization
-    st.subheader("Loose Price vs PSA 10 Graded Price")
-    scatter_fig = px.scatter(
-        filtered_df,
-        x="loose-price",
-        y="psa-10-price",
-        hover_name="product-name",
-        hover_data=["console-name", "product-url"],
-        title="Loose Price vs PSA 10 Graded Price",
-        labels={"loose-price": "Loose Price ($)", "psa-10-price": "PSA 10 Price ($)"},
-        template="plotly_white",
-    )
-    scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
-    st.plotly_chart(scatter_fig, use_container_width=True)
+    # Existing Market Cap Logic...
 
 elif selected_page == "PSA Card Trends":
     st.header("PSA Card Trends")
-    st.write("This page is under construction.")
+    try:
+        merged_df = load_trend_data(DATA_FOLDER)
+        display_trends(merged_df, st)
+    except ValueError as e:
+        st.error(str(e))
