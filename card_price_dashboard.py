@@ -1,13 +1,23 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import os
 
 # Set page title and layout
 st.set_page_config(page_title="CardMarketCap.App", layout="wide")
 
-# Load the data
-DATA_FILE = "filtered_price_data.csv"
-df = pd.read_csv(DATA_FILE)
+# Load the newest data file
+DATA_FOLDER = "data"
+data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
+data_files.sort(reverse=True)  # Sort files by name (newest date first)
+
+if data_files:
+    DATA_FILE = os.path.join(DATA_FOLDER, data_files[0])
+    df = pd.read_csv(DATA_FILE)
+    st.sidebar.info(f"Loaded data file: {data_files[0]}")
+else:
+    st.error("No data files found in the 'data' folder.")
+    st.stop()
 
 # Ensure all necessary columns exist and compute missing ones dynamically
 df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
@@ -27,9 +37,6 @@ min_sales = st.sidebar.number_input("Minimum Sales Volume", min_value=0, value=0
 years = list(range(1999, 2026))
 selected_years = st.sidebar.multiselect("Select Release Years", options=years, default=years)
 
-# New: Add a text search bar for card name
-search_query = st.sidebar.text_input("Search by Card Name", value="")
-
 # Apply filters
 filtered_df = df[
     (df['psa-10-price'] >= min_psa_price) &
@@ -39,10 +46,6 @@ filtered_df = df[
     (df['sales-volume'] >= min_sales) &
     (df['release-year'].isin(selected_years))
 ]
-
-# Apply text search filter
-if search_query.strip():
-    filtered_df = filtered_df[filtered_df['product-name'].str.contains(search_query, case=False, na=False)]
 
 # Format financial columns
 def format_currency(value):
@@ -81,7 +84,7 @@ def render_table_with_links(df, columns, url_column):
 
 # Main Dashboard
 st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
-selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"], horizontal=True)
+selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"])
 
 if selected_page == "PSA Card Market Cap":
     st.header("PSA 10 Card Market Cap Dashboard")
