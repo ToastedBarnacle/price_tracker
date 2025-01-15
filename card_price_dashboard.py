@@ -7,17 +7,27 @@ import os
 st.set_page_config(page_title="CardMarketCap.App", layout="wide")
 
 # Load the newest data file
-DATA_FOLDER = "data"
+DATA_FOLDER = "Data"  # Correctly capitalized folder name
+
+# Ensure the data folder exists
+if not os.path.exists(DATA_FOLDER):
+    os.makedirs(DATA_FOLDER)
+    st.error(f"Data folder '{DATA_FOLDER}' does not exist. Please upload CSV files to this folder.")
+    st.stop()
+
+# List all data files
 data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
 data_files.sort(reverse=True)  # Sort files by name (newest date first)
 
-if data_files:
-    DATA_FILE = os.path.join(DATA_FOLDER, data_files[0])
-    df = pd.read_csv(DATA_FILE)
-    st.sidebar.info(f"Loaded data file: {data_files[0]}")
-else:
-    st.error("No data files found in the 'data' folder.")
+# Check for available files
+if not data_files:
+    st.error(f"No data files found in the '{DATA_FOLDER}' folder. Please upload at least one file.")
     st.stop()
+
+# Load the newest data file
+DATA_FILE = os.path.join(DATA_FOLDER, data_files[0])
+df = pd.read_csv(DATA_FILE)
+st.sidebar.info(f"Loaded data file: {data_files[0]}")
 
 # Ensure all necessary columns exist and compute missing ones dynamically
 df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
@@ -84,7 +94,7 @@ def render_table_with_links(df, columns, url_column):
 
 # Main Dashboard
 st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
-selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"])
+selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"], horizontal=True)
 
 if selected_page == "PSA Card Market Cap":
     st.header("PSA 10 Card Market Cap Dashboard")
