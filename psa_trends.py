@@ -5,20 +5,12 @@ import os
 # Constants
 DATA_FOLDER = "Data"  # Correctly capitalized folder name
 
-def load_data_files():
-    """Load the two most recent data files for trend analysis."""
-    # List all data files
-    data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
-    data_files.sort(reverse=True)  # Sort files by name (newest date first)
-
-    # Ensure we have at least two files
-    if len(data_files) < 2:
-        st.error(f"At least two data files are required in the '{DATA_FOLDER}' folder for trends analysis.")
-        st.stop()
-
-    # Load the newest and previous data files
-    newest_file = os.path.join(DATA_FOLDER, data_files[0])
-    previous_file = os.path.join(DATA_FOLDER, data_files[1])
+def load_data_files(selected_files):
+    """Load selected data files for trend analysis."""
+    # Load the selected files
+    newest_file = os.path.join(DATA_FOLDER, selected_files[0])
+    previous_file = os.path.join(DATA_FOLDER, selected_files[1])
+    
     newest_df = pd.read_csv(newest_file)
     previous_df = pd.read_csv(previous_file)
 
@@ -65,10 +57,10 @@ def calculate_trends(newest_df, previous_df, filters):
 
     return trend_data
 
-def render_trends_page(filters):
+def render_trends_page(filters, selected_files):
     """Render the PSA Trends page."""
     try:
-        newest_df, previous_df = load_data_files()
+        newest_df, previous_df = load_data_files(selected_files)
         trend_data = calculate_trends(newest_df, previous_df, filters)
 
         # Formatting for display
@@ -142,3 +134,24 @@ def render_trends_page(filters):
 
     except Exception as e:
         st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
+
+# Sidebar Dropdowns for Date Selection
+data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
+data_files.sort(reverse=True)
+
+# Populate the drop-downs with available dates
+file_names = [f.split("_")[2] for f in data_files]  # Extract the date from the filename
+selected_files = st.selectbox("Select the most recent data set", file_names, index=0), st.selectbox("Select the previous data set", file_names, index=1)
+
+# Add the filters and render the trends page
+filters = {
+    "min_psa_price": 0.0,
+    "max_psa_price": 1000.0,
+    "min_loose_price": 0.0,
+    "max_loose_price": 1000.0,
+    "min_sales": 0,
+    "selected_years": list(range(1999, 2026)),
+    "selected_sets": []  # Leave empty for no set filter
+}
+
+render_trends_page(filters, selected_files)
