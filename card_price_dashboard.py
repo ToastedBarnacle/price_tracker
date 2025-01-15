@@ -70,9 +70,9 @@ def format_currency(value):
 def format_sales(value):
     return f"{value:,}" if pd.notnull(value) else "N/A"
 
-filtered_df['loose-price'] = filtered_df['loose-price'].apply(format_currency)
-filtered_df['psa-10-price'] = filtered_df['psa-10-price'].apply(format_currency)
-filtered_df['market-cap'] = filtered_df['market-cap'].apply(format_currency)
+filtered_df['loose-price-display'] = numeric_filtered_df['loose-price'].apply(format_currency)
+filtered_df['psa-10-price-display'] = numeric_filtered_df['psa-10-price'].apply(format_currency)
+filtered_df['market-cap-display'] = numeric_filtered_df['market-cap'].apply(format_currency)
 filtered_df['sales-volume'] = filtered_df['sales-volume'].apply(format_sales)
 
 # Function to generate an HTML table with clickable links
@@ -85,10 +85,10 @@ def render_table_with_links(df, columns, url_column):
         "Ranking": "Ranking",
         "product-name": "Card",
         "console-name": "Set",
-        "loose-price": "Raw Price",
-        "psa-10-price": "PSA 10 Price",
+        "loose-price-display": "Raw Price",
+        "psa-10-price-display": "PSA 10 Price",
         "sales-volume": "Sales/Year",
-        "market-cap": "Market Cap",
+        "market-cap-display": "Market Cap",
         "grading-profitability": "Grading Profitability",
         "product-url": "PriceCharting Link"
     })
@@ -114,7 +114,7 @@ if selected_page == "PSA Card Market Cap":
     st.markdown(
         render_table_with_links(
             top_market_cap,
-            ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'market-cap'],
+            ['Ranking', 'product-name', 'console-name', 'loose-price-display', 'psa-10-price-display', 'sales-volume', 'market-cap-display'],
             'product-url'
         ),
         unsafe_allow_html=True
@@ -131,7 +131,7 @@ if selected_page == "PSA Card Market Cap":
     st.markdown(
         render_table_with_links(
             top_profitability,
-            ['Ranking', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume', 'grading-profitability'],
+            ['Ranking', 'product-name', 'console-name', 'loose-price-display', 'psa-10-price-display', 'sales-volume', 'grading-profitability'],
             'product-url'
         ),
         unsafe_allow_html=True
