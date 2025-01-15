@@ -110,8 +110,13 @@ def render_trends_page(filters):
                     'Ranking': 'Rank',
                     'product-name': 'Card Name',
                     'console-name': 'Set',
-                    sort_column: '% Change',
-                    **{col: col.replace('_new', 'New').replace('_old', 'Last') for col in additional_columns}
+                    'loose-price_old': 'Last Price',
+                    'loose-price_new': 'New Price',
+                    'psa-10-price_old': 'Last Price',
+                    'psa-10-price_new': 'New Price',
+                    'sales-volume_old': 'Previous Sales',
+                    'sales-volume_new': 'New Sales',
+                    sort_column: '% Change'
                 }
             )
             st.table(table)
