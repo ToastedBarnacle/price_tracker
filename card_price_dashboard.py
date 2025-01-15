@@ -75,8 +75,9 @@ filtered_df['psa-10-price-display'] = numeric_filtered_df['psa-10-price'].apply(
 filtered_df['market-cap-display'] = numeric_filtered_df['market-cap'].apply(format_currency)
 filtered_df['sales-volume'] = filtered_df['sales-volume'].apply(format_sales)
 
-# Function to generate an HTML table with clickable links
+# Ensure all columns used in the table exist
 def render_table_with_links(df, columns, url_column):
+    df = df.copy()
     table_html = df[columns + [url_column]].copy()
     table_html[url_column] = table_html[url_column].apply(
         lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>'
