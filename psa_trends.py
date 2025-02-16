@@ -5,8 +5,8 @@ import os
 # Constants
 DATA_FOLDER = "Data"  # Correctly capitalized folder name
 
-def load_data_files():
-    """Load the two most recent data files for trend analysis."""
+def load_data_files(selected_previous_file):
+    """Load the newest and selected previous data files for trend analysis."""
     # List all data files
     data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
     data_files.sort(reverse=True)  # Sort files by name (newest date first)
@@ -18,7 +18,14 @@ def load_data_files():
 
     # Load the newest and previous data files
     newest_file = os.path.join(DATA_FOLDER, data_files[0])
-    previous_file = os.path.join(DATA_FOLDER, data_files[1])
+
+    # Get the selected previous file
+    if selected_previous_file not in data_files:
+        st.error(f"Invalid selected file: {selected_previous_file}. Please select a valid previous data set.")
+        st.stop()
+
+    previous_file = os.path.join(DATA_FOLDER, selected_previous_file)
+
     newest_df = pd.read_csv(newest_file)
     previous_df = pd.read_csv(previous_file)
 
@@ -68,7 +75,11 @@ def calculate_trends(newest_df, previous_df, filters):
 def render_trends_page(filters):
     """Render the PSA Trends page."""
     try:
-        newest_df, previous_df = load_data_files()
+        # Get the selected previous data file
+        selected_previous_file = st.selectbox("Select the previous data set", get_data_files(), index=1)
+
+        # Load the data files
+        newest_df, previous_df = load_data_files(selected_previous_file)
         trend_data = calculate_trends(newest_df, previous_df, filters)
 
         # Formatting for display
@@ -92,10 +103,6 @@ def render_trends_page(filters):
         trend_data['sales-volume_new'] = trend_data['sales-volume_new'].apply(format_sales)
         trend_data['sales-volume_old'] = trend_data['sales-volume_old'].apply(format_sales)
 
-        # Add toggle button for gainers/losers
-        trend_type = st.radio("Select Trend Type", ["Top Gainers", "Top Losers"], horizontal=True)
-        ascending = trend_type == "Top Losers"
-
         # Generate PriceCharting link for each card
         def get_pricecharting_link(product_id):
             return f"https://www.pricecharting.com/offers?product={product_id}"
@@ -107,7 +114,7 @@ def render_trends_page(filters):
             sorted_trend_data[sort_column] = pd.to_numeric(
                 sorted_trend_data[sort_column].str.replace('%', ''), errors='coerce'
             )  # Convert percentages back to numeric
-            sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=ascending)
+            sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=True)
             sorted_trend_data['Ranking'] = range(1, len(sorted_trend_data) + 1)  # Add ranking column
 
             # Add product link column
@@ -153,13 +160,13 @@ def render_trends_page(filters):
     except Exception as e:
         st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
 
-# Sidebar Dropdowns for Date Selection
-data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
-data_files.sort(reverse=True)
 
-# Populate the drop-downs with available dates
-file_names = [f.split("_")[2] for f in data_files]  # Extract the date from the filename
-selected_files = st.selectbox("Select the most recent data set", file_names, index=0), st.selectbox("Select the previous data set", file_names, index=1)
+def get_data_files():
+    """Get the available data files in the Data folder."""
+    data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
+    data_files.sort(reverse=True)  # Sort files by name (newest date first)
+    return data_files
+
 
 # Add the filters and render the trends page
 filters = {
