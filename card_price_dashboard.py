@@ -2,12 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
-from importlib import import_module
 
-# Set page title and layout
-st.set_page_config(page_title="CardMarketCap.App", layout="wide")
-
-# Load the newest data file
+# Constants
 DATA_FOLDER = "Data"  # Correctly capitalized folder name
 
 # Ensure the data folder exists
@@ -48,9 +44,11 @@ min_sales = st.sidebar.number_input("Minimum Sales Volume", min_value=0, value=0
 years = list(range(1999, 2026))
 selected_years = st.sidebar.multiselect("Select Release Years", options=years, default=years)
 
-# New: Filter for console-name (Set) with no default selection
-console_names = df['console-name'].dropna().unique().tolist()
-selected_sets = st.sidebar.multiselect("Select Set", options=console_names, default=[])
+# Filter for card search by name
+card_name_search = st.sidebar.text_input("Search for Card Name")
+
+# Filter for separating English and Japanese cards
+language_filter = st.sidebar.selectbox("Select Language", options=["All", "English", "Japanese"])
 
 # Apply filters
 filtered_df = df[
@@ -59,9 +57,18 @@ filtered_df = df[
     (df['loose-price'] >= min_loose_price) &
     (df['loose-price'] <= max_loose_price) &
     (df['sales-volume'] >= min_sales) &
-    (df['release-year'].isin(selected_years)) &
-    (df['console-name'].isin(selected_sets) if selected_sets else True)  # Allow all if no sets are selected
+    (df['release-year'].isin(selected_years))
 ]
+
+# Apply search filter for card name
+if card_name_search:
+    filtered_df = filtered_df[filtered_df['product-name'].str.contains(card_name_search, case=False, na=False)]
+
+# Apply language filter for English/Japanese cards
+if language_filter == "English":
+    filtered_df = filtered_df[~filtered_df['console-name'].str.contains("japanese", case=False, na=False)]
+elif language_filter == "Japanese":
+    filtered_df = filtered_df[filtered_df['console-name'].str.contains("japanese", case=False, na=False)]
 
 # Format columns for display
 def format_currency(value):
