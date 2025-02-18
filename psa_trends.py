@@ -5,18 +5,23 @@ import os
 # Constants
 DATA_FOLDER = "Data"  # Correctly capitalized folder name
 
-def load_data_files(selected_previous_file):
-    """Load the newest and selected previous data files for trend analysis."""
-    # List all data files
+def get_data_files():
+    """Get the available data files in the Data folder."""
     data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
     data_files.sort(reverse=True)  # Sort files by name (newest date first)
+    return data_files
+
+def load_data_files(selected_previous_file):
+    """Load the newest and selected previous data files for trend analysis."""
+    # Get all available files
+    data_files = get_data_files()
 
     # Ensure we have at least two files
     if len(data_files) < 2:
         st.error(f"At least two data files are required in the '{DATA_FOLDER}' folder for trends analysis.")
         st.stop()
 
-    # Load the newest and previous data files
+    # Load the newest file
     newest_file = os.path.join(DATA_FOLDER, data_files[0])
 
     # Get the selected previous file
@@ -48,7 +53,7 @@ def calculate_trends(newest_df, previous_df, filters):
             (df['sales-volume'] >= filters['min_sales']) &
             (df['release-year'].isin(filters['selected_years']))
         ]
-        if filters['selected_sets']:
+        if filters.get('selected_sets'):  # Ensure it exists before using
             filtered_df = filtered_df[filtered_df['console-name'].isin(filters['selected_sets'])]
         return filtered_df
 
@@ -74,10 +79,12 @@ def calculate_trends(newest_df, previous_df, filters):
 
 def render_trends_page(filters):
     """Render the PSA Trends page."""
-    try:
-        # Get the selected previous data file
-        selected_previous_file = st.selectbox("Select the previous data set", get_data_files(), index=1)
 
+    # Select previous data set (newest is default)
+    data_files = get_data_files()
+    selected_previous_file = st.selectbox("Select the previous data set", data_files[1:], index=0)  # Default to second newest
+
+    try:
         # Load the data files
         newest_df, previous_df = load_data_files(selected_previous_file)
         trend_data = calculate_trends(newest_df, previous_df, filters)
@@ -104,71 +111,49 @@ def render_trends_page(filters):
         trend_data['sales-volume_old'] = trend_data['sales-volume_old'].apply(format_sales)
 
         # Generate PriceCharting link for each card
-        def get_pricecharting_link(product_id):
-            return f"https://www.pricecharting.com/offers?product={product_id}"
+        trend_data['Product Link'] = trend_data['id'].apply(lambda x: f"[View on PriceCharting](https://www.pricecharting.com/offers?product={x})")
 
         # Helper function to render a trends table
-        def render_table(title, column_name, sort_column, additional_columns):
+        def render_table(title, sort_column, additional_columns):
             st.subheader(title)
             sorted_trend_data = trend_data.copy()
             sorted_trend_data[sort_column] = pd.to_numeric(
                 sorted_trend_data[sort_column].str.replace('%', ''), errors='coerce'
             )  # Convert percentages back to numeric
-            sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=True)
+            sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=False)
             sorted_trend_data['Ranking'] = range(1, len(sorted_trend_data) + 1)  # Add ranking column
 
-            # Add product link column
-            sorted_trend_data['Product Link'] = sorted_trend_data['id'].apply(get_pricecharting_link)
-
-            # Remove the index column manually before displaying the table
+            # Remove index before displaying
             sorted_trend_data = sorted_trend_data.reset_index(drop=True)
 
-            # Render table without the rogue column
-            table = sorted_trend_data.head(10)[['Ranking', 'product-name', 'console-name'] + additional_columns + [sort_column, 'Product Link']].rename(
-                columns={
-                    'Ranking': 'Rank',
-                    'product-name': 'Card Name',
-                    'console-name': 'Set',
-                    'loose-price_old': 'Last Price',
-                    'loose-price_new': 'New Price',
-                    'psa-10-price_old': 'Last Price',
-                    'psa-10-price_new': 'New Price',
-                    'sales-volume_old': 'Previous Sales',
-                    'sales-volume_new': 'New Sales',
-                    sort_column: '% Change',
-                    'Product Link': 'PriceCharting Link'
-                }
-            ).reset_index(drop=True)  # Drop index again after renaming columns
-
             # Display the table
-            st.table(table)
+            st.table(
+                sorted_trend_data.head(10)[['Ranking', 'product-name', 'console-name'] + additional_columns + [sort_column, 'Product Link']].rename(
+                    columns={
+                        'Ranking': 'Rank',
+                        'product-name': 'Card Name',
+                        'console-name': 'Set',
+                        'loose-price_old': 'Last Price',
+                        'loose-price_new': 'New Price',
+                        'psa-10-price_old': 'Last Price',
+                        'psa-10-price_new': 'New Price',
+                        'sales-volume_old': 'Previous Sales',
+                        'sales-volume_new': 'New Sales',
+                        sort_column: '% Change',
+                        'Product Link': 'PriceCharting Link'
+                    }
+                )
+            )
 
         # Render tables
-        render_table(
-            "Top 10 Cards by Loose Price Change", "loose-price-change", 'loose-price-change',
-            ['loose-price_old', 'loose-price_new']
-        )
-        render_table(
-            "Top 10 Cards by PSA 10 Price Change", "psa-10-price-change", 'psa-10-price-change',
-            ['psa-10-price_old', 'psa-10-price_new']
-        )
-        render_table(
-            "Top 10 Cards by Sales Volume Change", "sales-volume-change", 'sales-volume-change',
-            ['sales-volume_old', 'sales-volume_new']
-        )
+        render_table("Top 10 Cards by Loose Price Change", 'loose-price-change', ['loose-price_old', 'loose-price_new'])
+        render_table("Top 10 Cards by PSA 10 Price Change", 'psa-10-price-change', ['psa-10-price_old', 'psa-10-price_new'])
+        render_table("Top 10 Cards by Sales Volume Change", 'sales-volume-change', ['sales-volume_old', 'sales-volume_new'])
 
     except Exception as e:
         st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
 
-
-def get_data_files():
-    """Get the available data files in the Data folder."""
-    data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
-    data_files.sort(reverse=True)  # Sort files by name (newest date first)
-    return data_files
-
-
-# Add the filters and render the trends page
+# Filters
 filters = {
     "min_psa_price": 0.0,
     "max_psa_price": 1000.0,
