@@ -89,16 +89,16 @@ def render_trends_page():
 
         # Sidebar filters
         st.sidebar.header("Filters")
-        min_psa_price = st.sidebar.number_input("Min PSA 10 Price ($)", min_value=0.0, value=0.0, step=1.0)
-        max_psa_price = st.sidebar.number_input("Max PSA 10 Price ($)", min_value=0.0, value=1000.0, step=1.0)
-        min_loose_price = st.sidebar.number_input("Min Loose Price ($)", min_value=0.0, value=0.0, step=1.0)
-        max_loose_price = st.sidebar.number_input("Max Loose Price ($)", min_value=0.0, value=1000.0, step=1.0)
-        min_sales = st.sidebar.number_input("Min Sales Volume", min_value=0, value=0, step=1)
-        selected_years = st.sidebar.multiselect("Select Release Years", options=list(range(1999, 2026)), default=list(range(1999, 2026)))
+        min_psa_price = st.sidebar.number_input("Min PSA 10 Price ($)", min_value=0.0, value=0.0, step=1.0, key="psa_min")
+        max_psa_price = st.sidebar.number_input("Max PSA 10 Price ($)", min_value=0.0, value=1000.0, step=1.0, key="psa_max")
+        min_loose_price = st.sidebar.number_input("Min Loose Price ($)", min_value=0.0, value=0.0, step=1.0, key="loose_min")
+        max_loose_price = st.sidebar.number_input("Max Loose Price ($)", min_value=0.0, value=1000.0, step=1.0, key="loose_max")
+        min_sales = st.sidebar.number_input("Min Sales Volume", min_value=0, value=0, step=1, key="sales_min")
+        selected_years = st.sidebar.multiselect("Select Release Years", options=list(range(1999, 2026)), default=list(range(1999, 2026)), key="years")
         
-        # Dropdown to select sets
+        # Dropdown to select sets (added unique key)
         all_sets = newest_df['console-name'].dropna().unique().tolist()
-        selected_sets = st.sidebar.multiselect("Select Set", options=all_sets, default=[])
+        selected_sets = st.sidebar.multiselect("Select Set", options=all_sets, default=[], key="sets_filter")
 
         # Filters
         filters = {
@@ -115,7 +115,7 @@ def render_trends_page():
         trend_data = calculate_trends(newest_df, previous_df, filters)
 
         # Add toggle button for gainers/losers
-        trend_type = st.radio("Select Trend Type", ["Top Gainers", "Top Losers"], horizontal=True)
+        trend_type = st.radio("Select Trend Type", ["Top Gainers", "Top Losers"], horizontal=True, key="gainers_losers")
         ascending = (trend_type == "Top Losers")  # Sort descending for gainers, ascending for losers
 
         # Generate PriceCharting link for each card
