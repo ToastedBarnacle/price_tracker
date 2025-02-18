@@ -53,7 +53,7 @@ def calculate_trends(newest_df, previous_df, filters):
             (df['sales-volume'] >= filters['min_sales']) &
             (df['release-year'].isin(filters['selected_years']))
         ]
-        if filters.get('selected_sets'):  # Ensure it exists before using
+        if 'selected_sets' in filters and filters['selected_sets']:  # Ensure it exists before using
             filtered_df = filtered_df[filtered_df['console-name'].isin(filters['selected_sets'])]
         return filtered_df
 
@@ -77,8 +77,9 @@ def calculate_trends(newest_df, previous_df, filters):
 
     return trend_data
 
-def render_trends_page(filters):
+def render_trends_page():
     """Render the PSA Trends page."""
+    st.title("PSA Trends Dashboard")
 
     # Select previous data set (newest is default)
     data_files = get_data_files()
@@ -87,42 +88,47 @@ def render_trends_page(filters):
     try:
         # Load the data files
         newest_df, previous_df = load_data_files(selected_previous_file)
+
+        # Sidebar filters
+        st.sidebar.header("Filters")
+        min_psa_price = st.sidebar.number_input("Min PSA 10 Price ($)", min_value=0.0, value=0.0, step=1.0)
+        max_psa_price = st.sidebar.number_input("Max PSA 10 Price ($)", min_value=0.0, value=1000.0, step=1.0)
+        min_loose_price = st.sidebar.number_input("Min Loose Price ($)", min_value=0.0, value=0.0, step=1.0)
+        max_loose_price = st.sidebar.number_input("Max Loose Price ($)", min_value=0.0, value=1000.0, step=1.0)
+        min_sales = st.sidebar.number_input("Min Sales Volume", min_value=0, value=0, step=1)
+        selected_years = st.sidebar.multiselect("Select Release Years", options=list(range(1999, 2026)), default=list(range(1999, 2026)))
+        
+        # Dropdown to select sets
+        all_sets = newest_df['console-name'].dropna().unique().tolist()
+        selected_sets = st.sidebar.multiselect("Select Set", options=all_sets, default=[])
+
+        # Filters
+        filters = {
+            "min_psa_price": min_psa_price,
+            "max_psa_price": max_psa_price,
+            "min_loose_price": min_loose_price,
+            "max_loose_price": max_loose_price,
+            "min_sales": min_sales,
+            "selected_years": selected_years,
+            "selected_sets": selected_sets
+        }
+
+        # Calculate trends
         trend_data = calculate_trends(newest_df, previous_df, filters)
-
-        # Formatting for display
-        def format_currency(value):
-            return f"${value:,.2f}" if pd.notnull(value) else "N/A"
-
-        def format_sales(value):
-            return f"{int(value):,}" if pd.notnull(value) else "N/A"
-
-        def format_percentage(value):
-            return f"{value:.2f}%" if pd.notnull(value) else "N/A"
-
-        # Apply formatting
-        trend_data['loose-price-change'] = trend_data['loose-price-change'].apply(format_percentage)
-        trend_data['psa-10-price-change'] = trend_data['psa-10-price-change'].apply(format_percentage)
-        trend_data['sales-volume-change'] = trend_data['sales-volume-change'].apply(format_percentage)
-        trend_data['loose-price_new'] = trend_data['loose-price_new'].apply(format_currency)
-        trend_data['loose-price_old'] = trend_data['loose-price_old'].apply(format_currency)
-        trend_data['psa-10-price_new'] = trend_data['psa-10-price_new'].apply(format_currency)
-        trend_data['psa-10-price_old'] = trend_data['psa-10-price_old'].apply(format_currency)
-        trend_data['sales-volume_new'] = trend_data['sales-volume_new'].apply(format_sales)
-        trend_data['sales-volume_old'] = trend_data['sales-volume_old'].apply(format_sales)
-
-        # Generate PriceCharting link for each card
-        trend_data['Product Link'] = trend_data['id'].apply(lambda x: f"[View on PriceCharting](https://www.pricecharting.com/offers?product={x})")
 
         # Add toggle button for gainers/losers
         trend_type = st.radio("Select Trend Type", ["Top Gainers", "Top Losers"], horizontal=True)
         ascending = (trend_type == "Top Losers")  # Sort descending for gainers, ascending for losers
+
+        # Generate PriceCharting link for each card
+        trend_data['Product Link'] = trend_data['id'].apply(lambda x: f"[View on PriceCharting](https://www.pricecharting.com/offers?product={x})")
 
         # Helper function to render a trends table
         def render_table(title, sort_column, additional_columns):
             st.subheader(title)
             sorted_trend_data = trend_data.copy()
             sorted_trend_data[sort_column] = pd.to_numeric(
-                sorted_trend_data[sort_column].str.replace('%', ''), errors='coerce'
+                sorted_trend_data[sort_column].astype(str).str.replace('%', ''), errors='coerce'
             )  # Convert percentages back to numeric
             sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=ascending)
             sorted_trend_data['Ranking'] = range(1, len(sorted_trend_data) + 1)  # Add ranking column
@@ -157,15 +163,5 @@ def render_trends_page(filters):
     except Exception as e:
         st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
 
-# Filters
-filters = {
-    "min_psa_price": 0.0,
-    "max_psa_price": 1000.0,
-    "min_loose_price": 0.0,
-    "max_loose_price": 1000.0,
-    "min_sales": 0,
-    "selected_years": list(range(1999, 2026)),
-    "selected_sets": []  # Leave empty for no set filter
-}
-
-render_trends_page(filters)
+# Run the page
+render_trends_page()
