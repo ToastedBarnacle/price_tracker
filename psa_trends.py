@@ -3,17 +3,16 @@ import pandas as pd
 import os
 
 # Constants
-DATA_FOLDER = "Data"  # Correctly capitalized folder name
+DATA_FOLDER = "Data"  # Folder where CSV files are stored
 
 def get_data_files():
-    """Get the available data files in the Data folder."""
+    """Retrieve the available data files in the Data folder."""
     data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
-    data_files.sort(reverse=True)  # Sort files by name (newest date first)
+    data_files.sort(reverse=True)  # Sort files by name (newest first)
     return data_files
 
 def load_data_files(selected_previous_file):
     """Load the newest and selected previous data files for trend analysis."""
-    # Get all available files
     data_files = get_data_files()
 
     # Ensure at least two files exist
@@ -43,7 +42,6 @@ def load_data_files(selected_previous_file):
 
 def calculate_trends(newest_df, previous_df, filters):
     """Calculate trends by comparing the newest and previous datasets, with filtering."""
-    # Apply filters to both dataframes
     def apply_filters(df, filters):
         filtered_df = df[
             (df['psa-10-price'] >= filters['min_psa_price']) &
@@ -53,7 +51,7 @@ def calculate_trends(newest_df, previous_df, filters):
             (df['sales-volume'] >= filters['min_sales']) &
             (df['release-year'].isin(filters['selected_years']))
         ]
-        if 'selected_sets' in filters and filters['selected_sets']:  # Ensure it exists before using
+        if filters.get('selected_sets'):  # Ensure 'selected_sets' exists before filtering
             filtered_df = filtered_df[filtered_df['console-name'].isin(filters['selected_sets'])]
         return filtered_df
 
