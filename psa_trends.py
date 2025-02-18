@@ -16,7 +16,7 @@ def load_data_files(selected_previous_file):
     # Get all available files
     data_files = get_data_files()
 
-    # Ensure we have at least two files
+    # Ensure at least two files exist
     if len(data_files) < 2:
         st.error(f"At least two data files are required in the '{DATA_FOLDER}' folder for trends analysis.")
         st.stop()
@@ -24,7 +24,7 @@ def load_data_files(selected_previous_file):
     # Load the newest file
     newest_file = os.path.join(DATA_FOLDER, data_files[0])
 
-    # Get the selected previous file
+    # Validate the selected previous file
     if selected_previous_file not in data_files:
         st.error(f"Invalid selected file: {selected_previous_file}. Please select a valid previous data set.")
         st.stop()
@@ -113,6 +113,10 @@ def render_trends_page(filters):
         # Generate PriceCharting link for each card
         trend_data['Product Link'] = trend_data['id'].apply(lambda x: f"[View on PriceCharting](https://www.pricecharting.com/offers?product={x})")
 
+        # Add toggle button for gainers/losers
+        trend_type = st.radio("Select Trend Type", ["Top Gainers", "Top Losers"], horizontal=True)
+        ascending = (trend_type == "Top Losers")  # Sort descending for gainers, ascending for losers
+
         # Helper function to render a trends table
         def render_table(title, sort_column, additional_columns):
             st.subheader(title)
@@ -120,7 +124,7 @@ def render_trends_page(filters):
             sorted_trend_data[sort_column] = pd.to_numeric(
                 sorted_trend_data[sort_column].str.replace('%', ''), errors='coerce'
             )  # Convert percentages back to numeric
-            sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=False)
+            sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=ascending)
             sorted_trend_data['Ranking'] = range(1, len(sorted_trend_data) + 1)  # Add ranking column
 
             # Remove index before displaying
