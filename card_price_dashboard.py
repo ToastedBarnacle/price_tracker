@@ -2,8 +2,12 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
+from importlib import import_module
 
-# Constants
+# Set page title and layout
+st.set_page_config(page_title="CardMarketCap.App", layout="wide")
+
+# Load the newest data file
 DATA_FOLDER = "Data"  # Correctly capitalized folder name
 
 # Ensure the data folder exists
@@ -44,11 +48,9 @@ min_sales = st.sidebar.number_input("Minimum Sales Volume", min_value=0, value=0
 years = list(range(1999, 2026))
 selected_years = st.sidebar.multiselect("Select Release Years", options=years, default=years)
 
-# Filter for card search by name
-card_name_search = st.sidebar.text_input("Search for Card Name")
-
-# Filter for separating English and Japanese cards
-language_filter = st.sidebar.selectbox("Select Language", options=["All", "English", "Japanese"])
+# **New: Filter for Sets (console-name)**
+console_names = df['console-name'].dropna().unique().tolist()
+selected_sets = st.sidebar.multiselect("Select Set", options=console_names, default=None, key="set_filter")
 
 # Apply filters
 filtered_df = df[
@@ -60,15 +62,9 @@ filtered_df = df[
     (df['release-year'].isin(selected_years))
 ]
 
-# Apply search filter for card name
-if card_name_search:
-    filtered_df = filtered_df[filtered_df['product-name'].str.contains(card_name_search, case=False, na=False)]
-
-# Apply language filter for English/Japanese cards
-if language_filter == "English":
-    filtered_df = filtered_df[~filtered_df['console-name'].str.contains("japanese", case=False, na=False)]
-elif language_filter == "Japanese":
-    filtered_df = filtered_df[filtered_df['console-name'].str.contains("japanese", case=False, na=False)]
+# **Apply "Selected Sets" Filter Properly**
+if selected_sets:
+    filtered_df = filtered_df[filtered_df['console-name'].isin(selected_sets)]
 
 # Format columns for display
 def format_currency(value):
@@ -157,25 +153,9 @@ if selected_page == "PSA Card Market Cap":
         unsafe_allow_html=True
     )
 
-    # Scatterplot Visualization
-    st.subheader("Loose Price vs PSA 10 Graded Price")
-    scatter_fig = px.scatter(
-        filtered_df,
-        x="loose-price",
-        y="psa-10-price",
-        hover_name="product-name",
-        hover_data=["console-name", "product-url"],
-        title="Loose Price vs PSA 10 Graded Price",
-        labels={"loose-price": "Loose Price ($)", "psa-10-price": "PSA 10 Price ($)"},
-        template="plotly_white",
-    )
-    scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
-    st.plotly_chart(scatter_fig, use_container_width=True)
-
 elif selected_page == "PSA Card Trends":
     try:
         import psa_trends
-        # Define filters to pass
         filters = {
             "min_psa_price": min_psa_price,
             "max_psa_price": max_psa_price,
@@ -186,7 +166,5 @@ elif selected_page == "PSA Card Trends":
             "selected_sets": selected_sets
         }
         psa_trends.render_trends_page(filters)
-    except ModuleNotFoundError:
-        st.write("The PSA Trends module is not yet available. Please upload `psa_trends.py` to enable this feature.")
     except Exception as e:
         st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
