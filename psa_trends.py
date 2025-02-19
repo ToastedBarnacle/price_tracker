@@ -16,31 +16,34 @@ def load_data_files(previous_file):
     data_files = get_data_files()
     
     if len(data_files) < 2:
-        st.warning("Not enough data files for trend analysis. Upload at least two files.")
+        st.error("Not enough data files for trend analysis. Upload at least two files.")
         return None, None
 
     newest_file = os.path.join(DATA_FOLDER, data_files[0])
 
     if previous_file not in data_files:
-        st.warning(f"Invalid previous file selected: {previous_file}")
+        st.error(f"Invalid previous file selected: {previous_file}")
         return None, None
 
     previous_file_path = os.path.join(DATA_FOLDER, previous_file)
 
-    st.write(f"Loading newest file: {newest_file}")
-    st.write(f"Loading previous file: {previous_file_path}")
+    st.write(f"📂 Loading newest file: {data_files[0]}")
+    st.write(f"📂 Loading previous file: {previous_file}")
 
     newest_df = pd.read_csv(newest_file)
     previous_df = pd.read_csv(previous_file_path)
 
     if newest_df.empty or previous_df.empty:
-        st.error("One or both datasets are empty!")
+        st.error("🚨 One or both datasets are empty!")
         return None, None
 
     # Ensure 'release-year' is parsed correctly
     for df in [newest_df, previous_df]:
         if 'release-date' in df.columns:
             df['release-year'] = pd.to_datetime(df['release-date'], errors='coerce').dt.year.fillna(0).astype(int)
+
+    st.write("✅ Newest dataset loaded:", newest_df.head())
+    st.write("✅ Previous dataset loaded:", previous_df.head())
 
     return newest_df, previous_df
 
@@ -63,7 +66,7 @@ def calculate_trends(newest_df, previous_df, filters):
     previous_df = apply_filters(previous_df, filters)
 
     if newest_df.empty or previous_df.empty:
-        st.warning("No matching data found after filtering.")
+        st.warning("⚠️ No matching data found after filtering.")
         return None
 
     # Merge datasets and calculate trends
@@ -74,7 +77,7 @@ def calculate_trends(newest_df, previous_df, filters):
     )
 
     if trend_data.empty:
-        st.warning("No matching records found after merging datasets.")
+        st.warning("⚠️ No matching records found after merging datasets.")
         return None
 
     # Compute percentage changes, handling division by zero
@@ -82,13 +85,15 @@ def calculate_trends(newest_df, previous_df, filters):
         trend_data[f"{col}-change"] = ((trend_data[f"{col}_new"] - trend_data[f"{col}_old"]) /
                                        trend_data[f"{col}_old"].replace(0, float('nan'))) * 100
 
+    st.write("✅ Trend data computed:", trend_data.head())
+
     return trend_data.dropna()
 
 def render_trends_page(filters):
     """Render the PSA Trends page with proper debugging and fallback messages."""
     data_files = get_data_files()
     if len(data_files) < 2:
-        st.warning("Not enough data files for trend analysis. Upload at least two files.")
+        st.warning("⚠️ Not enough data files for trend analysis. Upload at least two files.")
         return
 
     # Select previous dataset from dropdown
@@ -102,7 +107,7 @@ def render_trends_page(filters):
     trend_data = calculate_trends(newest_df, previous_df, filters)
 
     if trend_data is None or trend_data.empty:
-        st.warning("No data available to display.")
+        st.warning("⚠️ No data available to display.")
         return
 
     # Toggle for gainers/losers
@@ -156,14 +161,14 @@ def render_trends_page(filters):
     render_table("Top 10 Cards by PSA 10 Price Change", "psa-10-price-change", ['psa-10-price_old', 'psa-10-price_new'])
     render_table("Top 10 Cards by Sales Volume Change", "sales-volume-change", ['sales-volume_old', 'sales-volume_new'])
 
-# Sidebar Filters (Ignoring Selected Sets)
+# Sidebar Filters
 filters = {
-    "min_psa_price": st.sidebar.number_input("Minimum PSA 10 Price ($)", min_value=0.0, value=0.0),
-    "max_psa_price": st.sidebar.number_input("Maximum PSA 10 Price ($)", min_value=0.0, value=1000.0),
-    "min_loose_price": st.sidebar.number_input("Minimum Loose Price ($)", min_value=0.0, value=0.0),
-    "max_loose_price": st.sidebar.number_input("Maximum Loose Price ($)", min_value=0.0, value=1000.0),
-    "min_sales": st.sidebar.number_input("Minimum Sales Volume", min_value=0, value=0),
-    "selected_years": st.sidebar.multiselect("Select Release Years", options=list(range(1999, 2026)), default=list(range(1999, 2026))),
+    "min_psa_price": 0.0,
+    "max_psa_price": 1000.0,
+    "min_loose_price": 0.0,
+    "max_loose_price": 1000.0,
+    "min_sales": 0,
+    "selected_years": list(range(1999, 2026)),
 }
 
 # Render PSA Trends Page
