@@ -74,13 +74,13 @@ def render_trends_page():
 
         # Apply formatting
         for column in ['loose-price-change', 'psa-10-price-change', 'sales-volume-change']:
-            trend_data[column] = trend_data[column].apply(format_percentage)
+            trend_data[column] = trend_data[column].apply(lambda x: format_percentage(x) if pd.notnull(x) else "N/A")
 
         for column in ['loose-price_new', 'loose-price_old', 'psa-10-price_new', 'psa-10-price_old']:
-            trend_data[column] = trend_data[column].apply(format_currency)
+            trend_data[column] = trend_data[column].apply(lambda x: format_currency(x) if pd.notnull(x) else "N/A")
 
         for column in ['sales-volume_new', 'sales-volume_old']:
-            trend_data[column] = trend_data[column].apply(format_sales)
+            trend_data[column] = trend_data[column].apply(lambda x: format_sales(x) if pd.notnull(x) else "N/A")
 
         # Generate PriceCharting link for each card
         def get_pricecharting_link(product_id):
@@ -134,5 +134,5 @@ def get_data_files():
     data_files.sort(reverse=True)
     return data_files
 
-# Render the trends page
+# Call the function without arguments
 render_trends_page()
