@@ -131,8 +131,11 @@ def get_data_files():
     data_files.sort(reverse=True)
     return data_files
 
-# Sidebar to select previous dataset
-selected_previous_file = st.sidebar.selectbox("Select the previous data set", get_data_files(), index=1)
+# ✅ **Fix: Ensure `selected_previous_file` is a valid filename**
+available_files = get_data_files()
 
-# Call the function explicitly with the selected file
-render_trends_page(selected_previous_file)
+if available_files:
+    selected_previous_file = st.sidebar.selectbox("Select the previous data set", available_files, index=1)
+    render_trends_page(selected_previous_file)
+else:
+    st.error("No valid data files found in the 'Data' folder. Please upload at least two CSV files.")
