@@ -44,12 +44,12 @@ def format_file_date(file_name):
 st.sidebar.info(format_file_date(data_files[0]))
 
 # Ensure all necessary columns exist and compute missing ones dynamically
-df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
+df['grading-profitability'] = pd.to_numeric(df.get('psa-10-price', 0), errors='coerce') - pd.to_numeric(df.get('loose-price', 0), errors='coerce')
 df['grading-profitability'] = df['grading-profitability'].fillna(0)
-df['market-cap'] = pd.to_numeric(df['loose-price'], errors='coerce') * pd.to_numeric(df['sales-volume'], errors='coerce')
+df['market-cap'] = pd.to_numeric(df.get('loose-price', 0), errors='coerce') * pd.to_numeric(df.get('sales-volume', 0), errors='coerce')
 df['market-cap'] = df['market-cap'].fillna(0)
-df['release-year'] = pd.to_datetime(df['release-date'], errors='coerce').dt.year.fillna(0).astype(int)
-df['product-url'] = df['id'].apply(lambda x: f"https://www.pricecharting.com/offers?product={x}")
+df['release-year'] = pd.to_datetime(df.get('release-date', pd.NaT), errors='coerce').dt.year.fillna(0).astype(int)
+df['product-url'] = df.get('id', '').apply(lambda x: f"https://www.pricecharting.com/offers?product={x}")
 
 # Sidebar Filters
 st.sidebar.header("Filters")
@@ -73,14 +73,25 @@ filtered_df = df[
     (df['loose-price'] <= max_loose_price) &
     (df['sales-volume'] >= min_sales) &
     (df['release-year'].isin(selected_years)) &
-    (df['console-name'].isin(selected_sets) if selected_sets else True)  # Allow all if no sets are selected
+    (df['console-name'].isin(selected_sets) if selected_sets else True)
 ]
 
 # Function to generate an HTML table with clickable links
 def render_table_with_links(df, columns, url_column):
+    """Safely generates an HTML table, ensuring all required columns exist."""
+    missing_columns = [col for col in columns if col not in df.columns]
+    
+    if missing_columns:
+        st.error(f"Missing required columns in the dataset: {', '.join(missing_columns)}")
+        return "Error: Missing required data columns"
+
+    # Ensure the URL column exists before applying transformations
+    if url_column not in df.columns:
+        df[url_column] = ""
+
     table_html = df[columns + [url_column]].copy()
     table_html[url_column] = table_html[url_column].apply(
-        lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>'
+        lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>' if x else "N/A"
     )
     table_html = table_html.rename(columns={
         "Ranking": "Ranking",
@@ -119,22 +130,3 @@ if selected_page == "PSA Card Market Cap":
         ),
         unsafe_allow_html=True
     )
-
-elif selected_page == "PSA Card Trends":
-    try:
-        import psa_trends
-        # Define filters to pass
-        filters = {
-            "min_psa_price": min_psa_price,
-            "max_psa_price": max_psa_price,
-            "min_loose_price": min_loose_price,
-            "max_loose_price": max_loose_price,
-            "min_sales": min_sales,
-            "selected_years": selected_years,
-            "selected_sets": selected_sets
-        }
-        psa_trends.render_trends_page(filters)
-    except ModuleNotFoundError:
-        st.write("The PSA Trends module is not yet available. Please upload `psa_trends.py` to enable this feature.")
-    except Exception as e:
-        st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
