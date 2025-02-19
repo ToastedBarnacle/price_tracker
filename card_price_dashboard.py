@@ -41,8 +41,8 @@ df['product-url'] = df['id'].apply(lambda x: f"https://www.pricecharting.com/off
 # Sidebar Filters
 st.sidebar.header("Filters")
 
-# 🔥 New Language Filter: All, English, Japanese
-language_filter = st.sidebar.radio("Select Language", ["All", "English", "Japanese"])
+# 🔥 New Card Name Search Filter
+search_query = st.sidebar.text_input("Search by Card Name", "")
 
 min_psa_price = st.sidebar.number_input("Minimum PSA 10 Price ($)", min_value=0.0, value=0.0, step=1.0)
 max_psa_price = st.sidebar.number_input("Maximum PSA 10 Price ($)", min_value=0.0, value=df['psa-10-price'].max(), step=1.0)
@@ -67,11 +67,9 @@ filtered_df = df[
     (df['console-name'].isin(selected_sets) if selected_sets else True)
 ]
 
-# 🔥 Apply language filter
-if language_filter == "English":
-    filtered_df = filtered_df[~filtered_df['console-name'].str.contains("japanese", case=False, na=False)]
-elif language_filter == "Japanese":
-    filtered_df = filtered_df[filtered_df['console-name'].str.contains("japanese", case=False, na=False)]
+# 🔥 Apply Card Name Search Filter
+if search_query:
+    filtered_df = filtered_df[filtered_df['product-name'].str.contains(search_query, case=False, na=False)]
 
 # Function to generate an HTML table with clickable links
 def render_table_with_links(df, columns, url_column):
@@ -120,7 +118,7 @@ if selected_page == "PSA Card Market Cap":
     # Top Cards by Profitability
     st.subheader("Top 20 Cards by Profitability")
     top_profitability = (
-        filtered_df.sort_values(by="grading-profitability", ascending=False)
+        filtered_df.sort_values(by="grading-profitability-percent", ascending=False)  # Sort by numeric profitability
         .head(20)
         .reset_index(drop=True)
     )
