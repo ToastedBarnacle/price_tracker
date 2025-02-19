@@ -7,8 +7,7 @@ DATA_FOLDER = "Data"
 
 def load_data_files(selected_previous_file):
     """Load the newest and selected previous data files for trend analysis."""
-    data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
-    data_files.sort(reverse=True)
+    data_files = get_data_files()
 
     if len(data_files) < 2:
         st.error(f"At least two data files are required in the '{DATA_FOLDER}' folder for trends analysis.")
@@ -131,11 +130,16 @@ def get_data_files():
     data_files.sort(reverse=True)
     return data_files
 
-# ✅ **Fix: Ensure `selected_previous_file` is a valid filename**
+# ✅ **Ensure `selected_previous_file` is a valid filename**
 available_files = get_data_files()
 
 if available_files:
     selected_previous_file = st.sidebar.selectbox("Select the previous data set", available_files, index=1)
-    render_trends_page(selected_previous_file)
+    
+    # 🚀 **Call function only if valid file is selected**
+    if selected_previous_file in available_files:
+        render_trends_page(selected_previous_file)
+    else:
+        st.error("Invalid file selection. Please select a valid dataset.")
 else:
     st.error("No valid data files found in the 'Data' folder. Please upload at least two CSV files.")
