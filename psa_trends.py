@@ -3,23 +3,18 @@ import pandas as pd
 import os
 
 # Constants
-DATA_FOLDER = "Data"  # Correctly capitalized folder name
+DATA_FOLDER = "Data"  # Ensure correct capitalization
 
 def load_data_files(selected_previous_file):
     """Load the newest and selected previous data files for trend analysis."""
-    # List all data files
-    data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
-    data_files.sort(reverse=True)  # Sort files by name (newest date first)
+    data_files = get_data_files()
 
-    # Ensure we have at least two files
     if len(data_files) < 2:
         st.error(f"At least two data files are required in the '{DATA_FOLDER}' folder for trends analysis.")
         st.stop()
 
-    # Load the newest and previous data files
     newest_file = os.path.join(DATA_FOLDER, data_files[0])
 
-    # Get the selected previous file
     if selected_previous_file not in data_files:
         st.error(f"Invalid selected file: {selected_previous_file}. Please select a valid previous data set.")
         st.stop()
@@ -29,7 +24,6 @@ def load_data_files(selected_previous_file):
     newest_df = pd.read_csv(newest_file)
     previous_df = pd.read_csv(previous_file)
 
-    # Add the release-year column dynamically
     for df in [newest_df, previous_df]:
         if 'release-date' in df.columns:
             df['release-year'] = pd.to_datetime(df['release-date'], errors='coerce').dt.year.fillna(0).astype(int)
@@ -82,7 +76,10 @@ def render_trends_page(filters):
         newest_df, previous_df = load_data_files(selected_previous_file)
         trend_data = calculate_trends(newest_df, previous_df, filters)
 
-        # Formatting for display
+        # Toggle to switch sorting order
+        reverse_sort = st.toggle("Show Highest Negative Change First", value=False)
+
+        # Formatting functions
         def format_currency(value):
             return f"${value:,.2f}" if pd.notnull(value) else "N/A"
 
@@ -93,28 +90,31 @@ def render_trends_page(filters):
             return f"{value:.2f}%" if pd.notnull(value) else "N/A"
 
         # Apply formatting
-        trend_data['loose-price-change'] = trend_data['loose-price-change'].apply(format_percentage)
-        trend_data['psa-10-price-change'] = trend_data['psa-10-price-change'].apply(format_percentage)
-        trend_data['sales-volume-change'] = trend_data['sales-volume-change'].apply(format_percentage)
-        trend_data['loose-price_new'] = trend_data['loose-price_new'].apply(format_currency)
-        trend_data['loose-price_old'] = trend_data['loose-price_old'].apply(format_currency)
-        trend_data['psa-10-price_new'] = trend_data['psa-10-price_new'].apply(format_currency)
-        trend_data['psa-10-price_old'] = trend_data['psa-10-price_old'].apply(format_currency)
-        trend_data['sales-volume_new'] = trend_data['sales-volume_new'].apply(format_sales)
-        trend_data['sales-volume_old'] = trend_data['sales-volume_old'].apply(format_sales)
+        for column in ['loose-price-change', 'psa-10-price-change', 'sales-volume-change']:
+            trend_data[column] = trend_data[column].apply(lambda x: format_percentage(x) if pd.notnull(x) else "N/A")
+
+        for column in ['loose-price_new', 'loose-price_old', 'psa-10-price_new', 'psa-10-price_old']:
+            trend_data[column] = trend_data[column].apply(lambda x: format_currency(x) if pd.notnull(x) else "N/A")
+
+        for column in ['sales-volume_new', 'sales-volume_old']:
+            trend_data[column] = trend_data[column].apply(lambda x: format_sales(x) if pd.notnull(x) else "N/A")
 
         # Generate PriceCharting link for each card
         def get_pricecharting_link(product_id):
             return f"https://www.pricecharting.com/offers?product={product_id}"
 
-        # Helper function to render a trends table
+        trend_data['Product Link'] = trend_data['id'].apply(get_pricecharting_link)
+
+        # Function to render a trends table
         def render_table(title, column_name, sort_column, additional_columns):
             st.subheader(title)
             sorted_trend_data = trend_data.copy()
             sorted_trend_data[sort_column] = pd.to_numeric(
                 sorted_trend_data[sort_column].str.replace('%', ''), errors='coerce'
             )  # Convert percentages back to numeric
-            sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=False)  # 🔥 Now sorting by highest positive %
+
+            # Apply sorting based on toggle state
+            sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=reverse_sort)
 
             sorted_trend_data['Ranking'] = range(1, len(sorted_trend_data) + 1)  # Add ranking column
 
