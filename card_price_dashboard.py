@@ -30,7 +30,17 @@ if not data_files:
 DATA_FILE = os.path.join(DATA_FOLDER, data_files[0])
 df = pd.read_csv(DATA_FILE)
 
-# Extract and format the date from the filename
+# 🔥 Ensure all expected columns exist
+expected_columns = [
+    "id", "product-name", "console-name", "loose-price", "psa-10-price",
+    "sales-volume", "release-date", "grading-profitability", "market-cap"
+]
+
+for col in expected_columns:
+    if col not in df.columns:
+        df[col] = None  # Add missing columns with default values
+
+# 🔥 Extract and format the date from the filename
 def format_file_date(file_name):
     """Extracts the date from the filename and formats it as Month Day, Year."""
     try:
@@ -40,7 +50,7 @@ def format_file_date(file_name):
     except ValueError:
         return "Data Last Updated: Unknown"
 
-# Update the sidebar message with the formatted date
+# 🔥 Update the sidebar message with the formatted date
 st.sidebar.info(format_file_date(data_files[0]))
 
 # Ensure all necessary columns exist and compute missing ones dynamically
@@ -78,9 +88,20 @@ filtered_df = df[
 
 # Function to generate an HTML table with clickable links
 def render_table_with_links(df, columns, url_column):
+    """Safely generates an HTML table, ensuring all required columns exist."""
+    missing_columns = [col for col in columns if col not in df.columns]
+    
+    if missing_columns:
+        st.error(f"Missing required columns in the dataset: {', '.join(missing_columns)}")
+        return "Error: Missing required data columns"
+
+    # Ensure the URL column exists before applying transformations
+    if url_column not in df.columns:
+        df[url_column] = ""
+
     table_html = df[columns + [url_column]].copy()
     table_html[url_column] = table_html[url_column].apply(
-        lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>'
+        lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>' if x else "N/A"
     )
     table_html = table_html.rename(columns={
         "Ranking": "Ranking",
@@ -119,22 +140,3 @@ if selected_page == "PSA Card Market Cap":
         ),
         unsafe_allow_html=True
     )
-
-elif selected_page == "PSA Card Trends":
-    try:
-        import psa_trends
-        # Define filters to pass
-        filters = {
-            "min_psa_price": min_psa_price,
-            "max_psa_price": max_psa_price,
-            "min_loose_price": min_loose_price,
-            "max_loose_price": max_loose_price,
-            "min_sales": min_sales,
-            "selected_years": selected_years,
-            "selected_sets": selected_sets
-        }
-        psa_trends.render_trends_page(filters)
-    except ModuleNotFoundError:
-        st.write("The PSA Trends module is not yet available. Please upload `psa_trends.py` to enable this feature.")
-    except Exception as e:
-        st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
