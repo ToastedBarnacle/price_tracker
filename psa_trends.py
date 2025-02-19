@@ -51,6 +51,13 @@ def calculate_trends(newest_df, previous_df):
 def render_trends_page(selected_previous_file):
     """Render the PSA Trends page."""
     try:
+        # 🚀 Debugging: Ensure this is a string
+        st.write(f"DEBUG: Selected Previous File -> {selected_previous_file} (Type: {type(selected_previous_file)})")
+
+        if not isinstance(selected_previous_file, str):
+            st.error(f"Invalid file selection: {selected_previous_file}. Please select a valid CSV file.")
+            return
+
         # Load the data files
         newest_df, previous_df = load_data_files(selected_previous_file)
         trend_data = calculate_trends(newest_df, previous_df)
@@ -130,14 +137,14 @@ def get_data_files():
     data_files.sort(reverse=True)
     return data_files
 
-# ✅ **Ensure `selected_previous_file` is a valid filename**
+# ✅ Ensure `selected_previous_file` is a valid filename
 available_files = get_data_files()
 
 if available_files:
     selected_previous_file = st.sidebar.selectbox("Select the previous data set", available_files, index=1)
     
-    # 🚀 **Call function only if valid file is selected**
-    if selected_previous_file in available_files:
+    # 🚀 Call function only if valid file is selected
+    if isinstance(selected_previous_file, str) and selected_previous_file in available_files:
         render_trends_page(selected_previous_file)
     else:
         st.error("Invalid file selection. Please select a valid dataset.")
