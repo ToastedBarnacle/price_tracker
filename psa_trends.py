@@ -3,7 +3,7 @@ import pandas as pd
 import os
 
 # Constants
-DATA_FOLDER = "Data"
+DATA_FOLDER = "Data"  # Ensure correct capitalization
 
 def load_data_files(selected_previous_file):
     """Load the newest and selected previous data files for trend analysis."""
@@ -30,8 +30,26 @@ def load_data_files(selected_previous_file):
 
     return newest_df, previous_df
 
-def calculate_trends(newest_df, previous_df):
-    """Calculate trends by comparing the newest and previous datasets."""
+def calculate_trends(newest_df, previous_df, filters):
+    """Calculate trends by comparing the newest and previous datasets, with filtering."""
+    
+    def apply_filters(df, filters):
+        filtered_df = df[
+            (df['psa-10-price'] >= filters['min_psa_price']) &
+            (df['psa-10-price'] <= filters['max_psa_price']) &
+            (df['loose-price'] >= filters['min_loose_price']) &
+            (df['loose-price'] <= filters['max_loose_price']) &
+            (df['sales-volume'] >= filters['min_sales']) &
+            (df['release-year'].isin(filters['selected_years']))
+        ]
+        if filters['selected_sets']:
+            filtered_df = filtered_df[filtered_df['console-name'].isin(filters['selected_sets'])]
+        return filtered_df
+
+    newest_df = apply_filters(newest_df, filters)
+    previous_df = apply_filters(previous_df, filters)
+
+    # Merge and calculate trends
     trend_data = newest_df[['id', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume']].merge(
         previous_df[['id', 'loose-price', 'psa-10-price', 'sales-volume']],
         on='id',
@@ -48,24 +66,17 @@ def calculate_trends(newest_df, previous_df):
 
     return trend_data
 
-def render_trends_page(selected_previous_file):
+def render_trends_page(selected_previous_file, filters):
     """Render the PSA Trends page."""
     try:
-        # 🚀 Debugging: Ensure this is a string
-        st.write(f"DEBUG: Selected Previous File -> {selected_previous_file} (Type: {type(selected_previous_file)})")
-
-        if not isinstance(selected_previous_file, str):
-            st.error(f"Invalid file selection: {selected_previous_file}. Please select a valid CSV file.")
-            return
-
         # Load the data files
         newest_df, previous_df = load_data_files(selected_previous_file)
-        trend_data = calculate_trends(newest_df, previous_df)
+        trend_data = calculate_trends(newest_df, previous_df, filters)
 
-        # Toggle to switch between gainers and losers
+        # Toggle between Biggest Gainers & Biggest Losers
         toggle_option = st.radio("Select Trend View", ["Biggest Gainers", "Biggest Losers"], horizontal=True)
 
-        # Formatting for display
+        # Formatting functions
         def format_currency(value):
             return f"${value:,.2f}" if pd.notnull(value) else "N/A"
 
@@ -137,16 +148,23 @@ def get_data_files():
     data_files.sort(reverse=True)
     return data_files
 
-# ✅ **Final Fix**
+# Select a valid previous dataset
 available_files = get_data_files()
 
 if available_files:
-    # 🚀 **Ensure only filenames are passed to `render_trends_page()`**
     selected_previous_file = st.sidebar.selectbox("Select the previous data set", available_files, index=1)
-    
-    if isinstance(selected_previous_file, str) and selected_previous_file in available_files:
-        render_trends_page(selected_previous_file)  # ✅ Only passing the filename
-    else:
-        st.error("Invalid file selection. Please select a valid dataset.")
+
+    # Set filters
+    filters = {
+        "min_psa_price": 0.0,
+        "max_psa_price": 1000.0,
+        "min_loose_price": 0.0,
+        "max_loose_price": 1000.0,
+        "min_sales": 0,
+        "selected_years": list(range(1999, 2026)),
+        "selected_sets": []
+    }
+
+    render_trends_page(selected_previous_file, filters)  # ✅ Only passing the filename
 else:
     st.error("No valid data files found in the 'Data' folder. Please upload at least two CSV files.")
