@@ -3,7 +3,13 @@ import pandas as pd
 import os
 
 # Constants
-DATA_FOLDER = "Data"  # Ensure correct capitalization
+DATA_FOLDER = "Data"
+
+def get_data_files():
+    """Get the available data files in the Data folder."""
+    data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
+    data_files.sort(reverse=True)
+    return data_files
 
 def load_data_files(selected_previous_file):
     """Load the newest and selected previous data files for trend analysis."""
@@ -32,7 +38,7 @@ def load_data_files(selected_previous_file):
 
 def calculate_trends(newest_df, previous_df, filters):
     """Calculate trends by comparing the newest and previous datasets, with filtering."""
-    
+
     def apply_filters(df, filters):
         filtered_df = df[
             (df['psa-10-price'] >= filters['min_psa_price']) &
@@ -142,19 +148,12 @@ def render_trends_page(selected_previous_file, filters):
     except Exception as e:
         st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
 
-def get_data_files():
-    """Get the available data files in the Data folder."""
-    data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
-    data_files.sort(reverse=True)
-    return data_files
-
-# Select a valid previous dataset
+# ✅ Ensure correct function call
 available_files = get_data_files()
 
 if available_files:
     selected_previous_file = st.sidebar.selectbox("Select the previous data set", available_files, index=1)
 
-    # Set filters
     filters = {
         "min_psa_price": 0.0,
         "max_psa_price": 1000.0,
@@ -165,6 +164,6 @@ if available_files:
         "selected_sets": []
     }
 
-    render_trends_page(selected_previous_file, filters)  # ✅ Only passing the filename
+    render_trends_page(selected_previous_file, filters)  # ✅ Now passing both required arguments!
 else:
     st.error("No valid data files found in the 'Data' folder. Please upload at least two CSV files.")
