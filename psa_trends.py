@@ -137,13 +137,13 @@ def get_data_files():
     data_files.sort(reverse=True)
     return data_files
 
-# ✅ Ensure `selected_previous_file` is a valid filename
+# ✅ **Final Fix**
 available_files = get_data_files()
 
 if available_files:
+    # 🚀 **Ensure only filenames are passed to `render_trends_page()`**
     selected_previous_file = st.sidebar.selectbox("Select the previous data set", available_files, index=1)
     
-    # 🚀 Call function only if valid file is selected
     if isinstance(selected_previous_file, str) and selected_previous_file in available_files:
         render_trends_page(selected_previous_file)
     else:
