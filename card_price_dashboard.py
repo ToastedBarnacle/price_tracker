@@ -2,13 +2,14 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
+from datetime import datetime
 from importlib import import_module
 
 # Set page title and layout
 st.set_page_config(page_title="CardMarketCap.App", layout="wide")
 
 # Load the newest data file
-DATA_FOLDER = "Data"  # Correctly capitalized folder name
+DATA_FOLDER = "Data"
 
 # Ensure the data folder exists
 if not os.path.exists(DATA_FOLDER):
@@ -28,7 +29,19 @@ if not data_files:
 # Load the newest data file
 DATA_FILE = os.path.join(DATA_FOLDER, data_files[0])
 df = pd.read_csv(DATA_FILE)
-st.sidebar.info(f"Loaded data file: {data_files[0]}")
+
+# 🔥 Extract and format the date from the filename
+def format_file_date(file_name):
+    """Extracts the date from the filename and formats it as Month Day, Year."""
+    try:
+        date_str = file_name.replace("filtered_price_data_", "").replace(".csv", "")
+        file_date = datetime.strptime(date_str, "%Y_%m_%d")  # Convert to datetime object
+        return file_date.strftime("Data Last Updated: %B %d, %Y")  # Format as "Month Day, Year"
+    except ValueError:
+        return "Data Last Updated: Unknown"
+
+# Display the formatted date at the top of the sidebar
+st.sidebar.info(format_file_date(data_files[0]))
 
 # Ensure all necessary columns exist and compute missing ones dynamically
 df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
@@ -63,31 +76,6 @@ filtered_df = df[
     (df['console-name'].isin(selected_sets) if selected_sets else True)  # Allow all if no sets are selected
 ]
 
-# Format columns for display
-def format_currency(value):
-    """Format value as currency with $ and commas."""
-    return f"${value:,.2f}" if pd.notnull(value) else "N/A"
-
-def format_sales(value):
-    """Format value with commas for large numbers."""
-    return f"{value:,}" if pd.notnull(value) else "N/A"
-
-def format_percentage(value):
-    """Format value as a percentage with 2 decimal places."""
-    return f"{value:.2%}" if pd.notnull(value) else "N/A"
-
-# Recalculate grading profitability as a numeric percentage
-filtered_df['grading-profitability-percent'] = (
-    filtered_df['grading-profitability'] / (pd.to_numeric(filtered_df['loose-price'], errors='coerce') + 15)
-)
-
-# Format columns for display
-filtered_df['grading-profitability'] = filtered_df['grading-profitability-percent'].apply(format_percentage)
-filtered_df['formatted-loose-price'] = filtered_df['loose-price'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
-filtered_df['formatted-psa-10-price'] = filtered_df['psa-10-price'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
-filtered_df['formatted-market-cap'] = filtered_df['market-cap'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
-filtered_df['sales-volume'] = filtered_df['sales-volume'].apply(format_sales)
-
 # Function to generate an HTML table with clickable links
 def render_table_with_links(df, columns, url_column):
     table_html = df[columns + [url_column]].copy()
@@ -105,8 +93,7 @@ def render_table_with_links(df, columns, url_column):
         "grading-profitability": "Grading Profitability",
         "product-url": "PriceCharting Link"
     })
-    table_html = table_html.to_html(escape=False, index=False)
-    return table_html
+    return table_html.to_html(escape=False, index=False)
 
 # Main Dashboard
 st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
@@ -132,38 +119,6 @@ if selected_page == "PSA Card Market Cap":
         ),
         unsafe_allow_html=True
     )
-
-    # Top Cards by Profitability
-    st.subheader("Top 20 Cards by Profitability")
-    top_profitability = (
-        filtered_df.sort_values(by="grading-profitability-percent", ascending=False)  # Sort by numeric profitability
-        .head(20)
-        .reset_index(drop=True)
-    )
-    top_profitability['Ranking'] = top_profitability.index + 1
-    st.markdown(
-        render_table_with_links(
-            top_profitability,
-            ['Ranking', 'product-name', 'console-name', 'formatted-loose-price', 'formatted-psa-10-price', 'sales-volume', 'grading-profitability'],
-            'product-url'
-        ),
-        unsafe_allow_html=True
-    )
-
-    # Scatterplot Visualization
-    st.subheader("Loose Price vs PSA 10 Graded Price")
-    scatter_fig = px.scatter(
-        filtered_df,
-        x="loose-price",
-        y="psa-10-price",
-        hover_name="product-name",
-        hover_data=["console-name", "product-url"],
-        title="Loose Price vs PSA 10 Graded Price",
-        labels={"loose-price": "Loose Price ($)", "psa-10-price": "PSA 10 Price ($)"},
-        template="plotly_white",
-    )
-    scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
-    st.plotly_chart(scatter_fig, use_container_width=True)
 
 elif selected_page == "PSA Card Trends":
     try:
