@@ -28,7 +28,20 @@ if not data_files:
 # Load the newest data file
 DATA_FILE = os.path.join(DATA_FOLDER, data_files[0])
 df = pd.read_csv(DATA_FILE)
-st.sidebar.info(f"Loaded data file: {data_files[0]}")
+
+# 🔥 Extract and format the date from the filename
+def format_file_date(file_name):
+    """Extracts the date from the filename and formats it as Month Day, Year."""
+    try:
+        date_str = file_name.replace("filtered_price_data_", "").replace(".csv", "")
+        file_date = datetime.strptime(date_str, "%Y_%m_%d")  # Convert to datetime object
+        return file_date.strftime("Data Last Updated: %B %d, %Y")  # Format as "Month Day, Year"
+    except ValueError:
+        return "Data Last Updated: Unknown"
+
+# 🔥 Update the sidebar message with the formatted date
+st.sidebar.info(format_file_date(data_files[0]))
+
 
 # Ensure all necessary columns exist and compute missing ones dynamically
 df['grading-profitability'] = pd.to_numeric(df['psa-10-price'], errors='coerce') - pd.to_numeric(df['loose-price'], errors='coerce')
