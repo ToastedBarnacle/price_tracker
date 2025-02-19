@@ -49,12 +49,9 @@ def calculate_trends(newest_df, previous_df):
 
     return trend_data
 
-def render_trends_page():
+def render_trends_page(selected_previous_file):
     """Render the PSA Trends page."""
     try:
-        # Get the selected previous data file
-        selected_previous_file = st.selectbox("Select the previous data set", get_data_files(), index=1)
-
         # Load the data files
         newest_df, previous_df = load_data_files(selected_previous_file)
         trend_data = calculate_trends(newest_df, previous_df)
@@ -134,5 +131,8 @@ def get_data_files():
     data_files.sort(reverse=True)
     return data_files
 
-# Call the function without arguments
-render_trends_page()
+# Sidebar to select previous dataset
+selected_previous_file = st.sidebar.selectbox("Select the previous data set", get_data_files(), index=1)
+
+# Call the function explicitly with the selected file
+render_trends_page(selected_previous_file)
