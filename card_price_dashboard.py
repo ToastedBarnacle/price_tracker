@@ -2,12 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
+from importlib import import_module
 
 # Set page title and layout
 st.set_page_config(page_title="CardMarketCap.App", layout="wide")
 
 # Load the newest data file
-DATA_FOLDER = "Data"
+DATA_FOLDER = "Data"  # Correctly capitalized folder name
 
 # Ensure the data folder exists
 if not os.path.exists(DATA_FOLDER):
@@ -39,13 +40,6 @@ df['product-url'] = df['id'].apply(lambda x: f"https://www.pricecharting.com/off
 
 # Sidebar Filters
 st.sidebar.header("Filters")
-
-# New Search Filter: Filter by card name
-search_query = st.sidebar.text_input("Search by Card Name", "")
-
-# New Language Filter: English, Japanese, or Both
-language_filter = st.sidebar.radio("Select Language", ["Both", "English", "Japanese"])
-
 min_psa_price = st.sidebar.number_input("Minimum PSA 10 Price ($)", min_value=0.0, value=0.0, step=1.0)
 max_psa_price = st.sidebar.number_input("Maximum PSA 10 Price ($)", min_value=0.0, value=df['psa-10-price'].max(), step=1.0)
 min_loose_price = st.sidebar.number_input("Minimum Loose Price ($)", min_value=0.0, value=0.0, step=1.0)
@@ -54,10 +48,11 @@ min_sales = st.sidebar.number_input("Minimum Sales Volume", min_value=0, value=0
 years = list(range(1999, 2026))
 selected_years = st.sidebar.multiselect("Select Release Years", options=years, default=years)
 
+# New: Filter for console-name (Set) with no default selection
 console_names = df['console-name'].dropna().unique().tolist()
 selected_sets = st.sidebar.multiselect("Select Set", options=console_names, default=[])
 
-# Apply Filters
+# Apply filters
 filtered_df = df[
     (df['psa-10-price'] >= min_psa_price) &
     (df['psa-10-price'] <= max_psa_price) &
@@ -65,27 +60,20 @@ filtered_df = df[
     (df['loose-price'] <= max_loose_price) &
     (df['sales-volume'] >= min_sales) &
     (df['release-year'].isin(selected_years)) &
-    (df['console-name'].isin(selected_sets) if selected_sets else True)
+    (df['console-name'].isin(selected_sets) if selected_sets else True)  # Allow all if no sets are selected
 ]
-
-# Apply search filter
-if search_query:
-    filtered_df = filtered_df[filtered_df['product-name'].str.contains(search_query, case=False, na=False)]
-
-# Apply language filter
-if language_filter == "English":
-    filtered_df = filtered_df[~filtered_df['console-name'].str.contains("Japanese", case=False, na=False)]
-elif language_filter == "Japanese":
-    filtered_df = filtered_df[filtered_df['console-name'].str.contains("Japanese", case=False, na=False)]
 
 # Format columns for display
 def format_currency(value):
+    """Format value as currency with $ and commas."""
     return f"${value:,.2f}" if pd.notnull(value) else "N/A"
 
 def format_sales(value):
+    """Format value with commas for large numbers."""
     return f"{value:,}" if pd.notnull(value) else "N/A"
 
 def format_percentage(value):
+    """Format value as a percentage with 2 decimal places."""
     return f"{value:.2%}" if pd.notnull(value) else "N/A"
 
 # Recalculate grading profitability as a numeric percentage
@@ -93,6 +81,7 @@ filtered_df['grading-profitability-percent'] = (
     filtered_df['grading-profitability'] / (pd.to_numeric(filtered_df['loose-price'], errors='coerce') + 15)
 )
 
+# Format columns for display
 filtered_df['grading-profitability'] = filtered_df['grading-profitability-percent'].apply(format_percentage)
 filtered_df['formatted-loose-price'] = filtered_df['loose-price'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
 filtered_df['formatted-psa-10-price'] = filtered_df['psa-10-price'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
@@ -116,7 +105,8 @@ def render_table_with_links(df, columns, url_column):
         "grading-profitability": "Grading Profitability",
         "product-url": "PriceCharting Link"
     })
-    return table_html.to_html(escape=False, index=False)
+    table_html = table_html.to_html(escape=False, index=False)
+    return table_html
 
 # Main Dashboard
 st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
@@ -143,6 +133,23 @@ if selected_page == "PSA Card Market Cap":
         unsafe_allow_html=True
     )
 
+    # Top Cards by Profitability
+    st.subheader("Top 20 Cards by Profitability")
+    top_profitability = (
+        filtered_df.sort_values(by="grading-profitability-percent", ascending=False)  # Sort by numeric profitability
+        .head(20)
+        .reset_index(drop=True)
+    )
+    top_profitability['Ranking'] = top_profitability.index + 1
+    st.markdown(
+        render_table_with_links(
+            top_profitability,
+            ['Ranking', 'product-name', 'console-name', 'formatted-loose-price', 'formatted-psa-10-price', 'sales-volume', 'grading-profitability'],
+            'product-url'
+        ),
+        unsafe_allow_html=True
+    )
+
     # Scatterplot Visualization
     st.subheader("Loose Price vs PSA 10 Graded Price")
     scatter_fig = px.scatter(
@@ -157,3 +164,22 @@ if selected_page == "PSA Card Market Cap":
     )
     scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
     st.plotly_chart(scatter_fig, use_container_width=True)
+
+elif selected_page == "PSA Card Trends":
+    try:
+        import psa_trends
+        # Define filters to pass
+        filters = {
+            "min_psa_price": min_psa_price,
+            "max_psa_price": max_psa_price,
+            "min_loose_price": min_loose_price,
+            "max_loose_price": max_loose_price,
+            "min_sales": min_sales,
+            "selected_years": selected_years,
+            "selected_sets": selected_sets
+        }
+        psa_trends.render_trends_page(filters)
+    except ModuleNotFoundError:
+        st.write("The PSA Trends module is not yet available. Please upload `psa_trends.py` to enable this feature.")
+    except Exception as e:
+        st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
