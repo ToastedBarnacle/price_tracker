@@ -40,6 +40,10 @@ df['product-url'] = df['id'].apply(lambda x: f"https://www.pricecharting.com/off
 
 # Sidebar Filters
 st.sidebar.header("Filters")
+
+# 🔥 New Language Filter: All, English, Japanese
+language_filter = st.sidebar.radio("Select Language", ["All", "English", "Japanese"])
+
 min_psa_price = st.sidebar.number_input("Minimum PSA 10 Price ($)", min_value=0.0, value=0.0, step=1.0)
 max_psa_price = st.sidebar.number_input("Maximum PSA 10 Price ($)", min_value=0.0, value=df['psa-10-price'].max(), step=1.0)
 min_loose_price = st.sidebar.number_input("Minimum Loose Price ($)", min_value=0.0, value=0.0, step=1.0)
@@ -52,7 +56,7 @@ selected_years = st.sidebar.multiselect("Select Release Years", options=years, d
 console_names = df['console-name'].dropna().unique().tolist()
 selected_sets = st.sidebar.multiselect("Select Set", options=console_names, default=[])
 
-# Apply filters
+# Apply Filters
 filtered_df = df[
     (df['psa-10-price'] >= min_psa_price) &
     (df['psa-10-price'] <= max_psa_price) &
@@ -60,33 +64,14 @@ filtered_df = df[
     (df['loose-price'] <= max_loose_price) &
     (df['sales-volume'] >= min_sales) &
     (df['release-year'].isin(selected_years)) &
-    (df['console-name'].isin(selected_sets) if selected_sets else True)  # Allow all if no sets are selected
+    (df['console-name'].isin(selected_sets) if selected_sets else True)
 ]
 
-# Format columns for display
-def format_currency(value):
-    """Format value as currency with $ and commas."""
-    return f"${value:,.2f}" if pd.notnull(value) else "N/A"
-
-def format_sales(value):
-    """Format value with commas for large numbers."""
-    return f"{value:,}" if pd.notnull(value) else "N/A"
-
-def format_percentage(value):
-    """Format value as a percentage with 2 decimal places."""
-    return f"{value:.2%}" if pd.notnull(value) else "N/A"
-
-# Recalculate grading profitability as a numeric percentage
-filtered_df['grading-profitability-percent'] = (
-    filtered_df['grading-profitability'] / (pd.to_numeric(filtered_df['loose-price'], errors='coerce') + 15)
-)
-
-# Format columns for display
-filtered_df['grading-profitability'] = filtered_df['grading-profitability-percent'].apply(format_percentage)
-filtered_df['formatted-loose-price'] = filtered_df['loose-price'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
-filtered_df['formatted-psa-10-price'] = filtered_df['psa-10-price'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
-filtered_df['formatted-market-cap'] = filtered_df['market-cap'].apply(lambda x: format_currency(pd.to_numeric(x, errors='coerce')))
-filtered_df['sales-volume'] = filtered_df['sales-volume'].apply(format_sales)
+# 🔥 Apply language filter
+if language_filter == "English":
+    filtered_df = filtered_df[~filtered_df['console-name'].str.contains("japanese", case=False, na=False)]
+elif language_filter == "Japanese":
+    filtered_df = filtered_df[filtered_df['console-name'].str.contains("japanese", case=False, na=False)]
 
 # Function to generate an HTML table with clickable links
 def render_table_with_links(df, columns, url_column):
@@ -105,8 +90,7 @@ def render_table_with_links(df, columns, url_column):
         "grading-profitability": "Grading Profitability",
         "product-url": "PriceCharting Link"
     })
-    table_html = table_html.to_html(escape=False, index=False)
-    return table_html
+    return table_html.to_html(escape=False, index=False)
 
 # Main Dashboard
 st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
@@ -136,7 +120,7 @@ if selected_page == "PSA Card Market Cap":
     # Top Cards by Profitability
     st.subheader("Top 20 Cards by Profitability")
     top_profitability = (
-        filtered_df.sort_values(by="grading-profitability-percent", ascending=False)  # Sort by numeric profitability
+        filtered_df.sort_values(by="grading-profitability", ascending=False)
         .head(20)
         .reset_index(drop=True)
     )
