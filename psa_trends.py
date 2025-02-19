@@ -145,7 +145,7 @@ if available_files:
     selected_previous_file = st.sidebar.selectbox("Select the previous data set", available_files, index=1)
     
     if isinstance(selected_previous_file, str) and selected_previous_file in available_files:
-        render_trends_page(selected_previous_file)
+        render_trends_page(selected_previous_file)  # ✅ Only passing the filename
     else:
         st.error("Invalid file selection. Please select a valid dataset.")
 else:
