@@ -38,7 +38,7 @@ def load_data_files(selected_previous_file):
 
 def calculate_trends(newest_df, previous_df, filters):
     """Calculate trends by comparing the newest and previous datasets, with filtering."""
-    # Apply filters to both dataframes
+
     def apply_filters(df, filters):
         filtered_df = df[
             (df['psa-10-price'] >= filters['min_psa_price']) &
@@ -114,7 +114,8 @@ def render_trends_page(filters):
             sorted_trend_data[sort_column] = pd.to_numeric(
                 sorted_trend_data[sort_column].str.replace('%', ''), errors='coerce'
             )  # Convert percentages back to numeric
-            sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=True)
+            sorted_trend_data = sorted_trend_data.sort_values(by=sort_column, ascending=False)  # 🔥 Now sorting by highest positive %
+
             sorted_trend_data['Ranking'] = range(1, len(sorted_trend_data) + 1)  # Add ranking column
 
             # Add product link column
@@ -160,13 +161,11 @@ def render_trends_page(filters):
     except Exception as e:
         st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
 
-
 def get_data_files():
     """Get the available data files in the Data folder."""
     data_files = [f for f in os.listdir(DATA_FOLDER) if f.startswith("filtered_price_data_") and f.endswith(".csv")]
     data_files.sort(reverse=True)  # Sort files by name (newest date first)
     return data_files
-
 
 # Add the filters and render the trends page
 filters = {
