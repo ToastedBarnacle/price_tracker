@@ -27,8 +27,15 @@ def load_data_files(previous_file):
 
     previous_file_path = os.path.join(DATA_FOLDER, previous_file)
 
+    st.write(f"Loading newest file: {newest_file}")
+    st.write(f"Loading previous file: {previous_file_path}")
+
     newest_df = pd.read_csv(newest_file)
     previous_df = pd.read_csv(previous_file_path)
+
+    if newest_df.empty or previous_df.empty:
+        st.error("One or both datasets are empty!")
+        return None, None
 
     # Ensure 'release-year' is parsed correctly
     for df in [newest_df, previous_df]:
@@ -38,7 +45,7 @@ def load_data_files(previous_file):
     return newest_df, previous_df
 
 def calculate_trends(newest_df, previous_df, filters):
-    """Apply filters (excluding selected_sets) and calculate trends."""
+    """Apply filters and calculate trends."""
     if newest_df is None or previous_df is None:
         return None
 
@@ -56,7 +63,7 @@ def calculate_trends(newest_df, previous_df, filters):
     previous_df = apply_filters(previous_df, filters)
 
     if newest_df.empty or previous_df.empty:
-        st.warning("No matching data found with the selected filters.")
+        st.warning("No matching data found after filtering.")
         return None
 
     # Merge datasets and calculate trends
@@ -66,6 +73,10 @@ def calculate_trends(newest_df, previous_df, filters):
         suffixes=('_new', '_old')
     )
 
+    if trend_data.empty:
+        st.warning("No matching records found after merging datasets.")
+        return None
+
     # Compute percentage changes, handling division by zero
     for col in ['loose-price', 'psa-10-price', 'sales-volume']:
         trend_data[f"{col}-change"] = ((trend_data[f"{col}_new"] - trend_data[f"{col}_old"]) /
@@ -74,7 +85,7 @@ def calculate_trends(newest_df, previous_df, filters):
     return trend_data.dropna()
 
 def render_trends_page(filters):
-    """Render the PSA Trends page, ensuring proper table population."""
+    """Render the PSA Trends page with proper debugging and fallback messages."""
     data_files = get_data_files()
     if len(data_files) < 2:
         st.warning("Not enough data files for trend analysis. Upload at least two files.")
@@ -85,10 +96,14 @@ def render_trends_page(filters):
 
     # Load datasets
     newest_df, previous_df = load_data_files(selected_previous_file)
+    if newest_df is None or previous_df is None:
+        return
+
     trend_data = calculate_trends(newest_df, previous_df, filters)
 
     if trend_data is None or trend_data.empty:
-        return  # Stop if no valid data
+        st.warning("No data available to display.")
+        return
 
     # Toggle for gainers/losers
     trend_type = st.radio("Select Trend Type", ["Top Gainers", "Top Losers"], horizontal=True)
