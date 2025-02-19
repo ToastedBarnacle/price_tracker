@@ -3,7 +3,7 @@ import pandas as pd
 import os
 
 # Constants
-DATA_FOLDER = "Data"  # Folder where data files are stored
+DATA_FOLDER = "Data"  # Folder where CSV data files are stored
 
 def get_data_files():
     """Retrieve all available data files sorted by date (newest first)."""
@@ -12,15 +12,15 @@ def get_data_files():
     return data_files
 
 def load_data_files(previous_file):
-    """Load the newest dataset and the selected previous dataset for comparison."""
+    """Load the most recent dataset and the selected previous dataset for comparison."""
     data_files = get_data_files()
-
+    
     if len(data_files) < 2:
         st.warning("Not enough data files for trend analysis. Upload at least two files.")
         return None, None
 
     newest_file = os.path.join(DATA_FOLDER, data_files[0])
-    
+
     if previous_file not in data_files:
         st.warning(f"Invalid previous file selected: {previous_file}")
         return None, None
@@ -30,7 +30,7 @@ def load_data_files(previous_file):
     newest_df = pd.read_csv(newest_file)
     previous_df = pd.read_csv(previous_file_path)
 
-    # Ensure 'release-year' is correctly parsed
+    # Ensure 'release-year' is parsed correctly
     for df in [newest_df, previous_df]:
         if 'release-date' in df.columns:
             df['release-year'] = pd.to_datetime(df['release-date'], errors='coerce').dt.year.fillna(0).astype(int)
@@ -38,12 +38,12 @@ def load_data_files(previous_file):
     return newest_df, previous_df
 
 def calculate_trends(newest_df, previous_df, filters):
-    """Apply filters and calculate trends between two datasets."""
+    """Apply filters (excluding selected_sets) and calculate trends."""
     if newest_df is None or previous_df is None:
-        return None  # Prevent further errors if data is missing
+        return None
 
     def apply_filters(df, filters):
-        filtered_df = df[
+        return df[
             (df['psa-10-price'] >= filters['min_psa_price']) &
             (df['psa-10-price'] <= filters['max_psa_price']) &
             (df['loose-price'] >= filters['min_loose_price']) &
@@ -51,9 +51,6 @@ def calculate_trends(newest_df, previous_df, filters):
             (df['sales-volume'] >= filters['min_sales']) &
             (df['release-year'].isin(filters['selected_years']))
         ]
-        if filters['selected_sets']:
-            filtered_df = filtered_df[filtered_df['console-name'].isin(filters['selected_sets'])]
-        return filtered_df
 
     newest_df = apply_filters(newest_df, filters)
     previous_df = apply_filters(previous_df, filters)
@@ -62,7 +59,7 @@ def calculate_trends(newest_df, previous_df, filters):
         st.warning("No matching data found with the selected filters.")
         return None
 
-    # Merge and calculate trends
+    # Merge datasets and calculate trends
     trend_data = newest_df[['id', 'product-name', 'console-name', 'loose-price', 'psa-10-price', 'sales-volume']].merge(
         previous_df[['id', 'loose-price', 'psa-10-price', 'sales-volume']],
         on='id',
@@ -74,16 +71,16 @@ def calculate_trends(newest_df, previous_df, filters):
         trend_data[f"{col}-change"] = ((trend_data[f"{col}_new"] - trend_data[f"{col}_old"]) /
                                        trend_data[f"{col}_old"].replace(0, float('nan'))) * 100
 
-    return trend_data.dropna()  # Remove any rows with missing data
+    return trend_data.dropna()
 
 def render_trends_page(filters):
-    """Render the PSA Trends page with filtering and trend tables."""
+    """Render the PSA Trends page, ensuring proper table population."""
     data_files = get_data_files()
     if len(data_files) < 2:
         st.warning("Not enough data files for trend analysis. Upload at least two files.")
         return
 
-    # Select previous data set from dropdown
+    # Select previous dataset from dropdown
     selected_previous_file = st.selectbox("Compare to previous data set:", data_files[1:], index=0)
 
     # Load datasets
@@ -144,7 +141,7 @@ def render_trends_page(filters):
     render_table("Top 10 Cards by PSA 10 Price Change", "psa-10-price-change", ['psa-10-price_old', 'psa-10-price_new'])
     render_table("Top 10 Cards by Sales Volume Change", "sales-volume-change", ['sales-volume_old', 'sales-volume_new'])
 
-# Sidebar Filters (Matches Main Dashboard)
+# Sidebar Filters (Ignoring Selected Sets)
 filters = {
     "min_psa_price": st.sidebar.number_input("Minimum PSA 10 Price ($)", min_value=0.0, value=0.0),
     "max_psa_price": st.sidebar.number_input("Maximum PSA 10 Price ($)", min_value=0.0, value=1000.0),
@@ -152,7 +149,6 @@ filters = {
     "max_loose_price": st.sidebar.number_input("Maximum Loose Price ($)", min_value=0.0, value=1000.0),
     "min_sales": st.sidebar.number_input("Minimum Sales Volume", min_value=0, value=0),
     "selected_years": st.sidebar.multiselect("Select Release Years", options=list(range(1999, 2026)), default=list(range(1999, 2026))),
-    "selected_sets": st.sidebar.multiselect("Select Sets", options=[], default=[]),
 }
 
 # Render PSA Trends Page
