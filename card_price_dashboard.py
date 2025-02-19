@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
-from importlib import import_module
 
 # Set page title and layout
 st.set_page_config(page_title="CardMarketCap.App", layout="wide")
@@ -48,9 +47,15 @@ min_sales = st.sidebar.number_input("Minimum Sales Volume", min_value=0, value=0
 years = list(range(1999, 2026))
 selected_years = st.sidebar.multiselect("Select Release Years", options=years, default=years)
 
-# **New: Filter for Sets (console-name)**
+# New: Filter for console-name (Set)
 console_names = df['console-name'].dropna().unique().tolist()
-selected_sets = st.sidebar.multiselect("Select Set", options=console_names, default=None, key="set_filter")
+selected_sets = st.sidebar.multiselect("Select Set", options=console_names, default=[])
+
+# New: Search bar for card names
+search_query = st.sidebar.text_input("Search for a card")
+
+# New: Language filter (English, Japanese, All)
+language_filter = st.sidebar.radio("Select Language", ["All", "English", "Japanese"])
 
 # Apply filters
 filtered_df = df[
@@ -59,12 +64,19 @@ filtered_df = df[
     (df['loose-price'] >= min_loose_price) &
     (df['loose-price'] <= max_loose_price) &
     (df['sales-volume'] >= min_sales) &
-    (df['release-year'].isin(selected_years))
+    (df['release-year'].isin(selected_years)) &
+    (df['console-name'].isin(selected_sets) if selected_sets else True)  # Allow all if no sets are selected
 ]
 
-# **Apply "Selected Sets" Filter Properly**
-if selected_sets:
-    filtered_df = filtered_df[filtered_df['console-name'].isin(selected_sets)]
+# Apply language filter
+if language_filter == "Japanese":
+    filtered_df = filtered_df[filtered_df['console-name'].str.contains("japanese", case=False, na=False)]
+elif language_filter == "English":
+    filtered_df = filtered_df[~filtered_df['console-name'].str.contains("japanese", case=False, na=False)]
+
+# Apply search filter for card name
+if search_query:
+    filtered_df = filtered_df[filtered_df['product-name'].str.contains(search_query, case=False, na=False)]
 
 # Format columns for display
 def format_currency(value):
@@ -97,17 +109,6 @@ def render_table_with_links(df, columns, url_column):
     table_html[url_column] = table_html[url_column].apply(
         lambda x: f'<a href="{x}" target="_blank">View on PriceCharting</a>'
     )
-    table_html = table_html.rename(columns={
-        "Ranking": "Ranking",
-        "product-name": "Card",
-        "console-name": "Set",
-        "formatted-loose-price": "Raw Price",
-        "formatted-psa-10-price": "PSA 10 Price",
-        "sales-volume": "Sales/Year",
-        "formatted-market-cap": "Market Cap",
-        "grading-profitability": "Grading Profitability",
-        "product-url": "PriceCharting Link"
-    })
     table_html = table_html.to_html(escape=False, index=False)
     return table_html
 
@@ -152,19 +153,3 @@ if selected_page == "PSA Card Market Cap":
         ),
         unsafe_allow_html=True
     )
-
-elif selected_page == "PSA Card Trends":
-    try:
-        import psa_trends
-        filters = {
-            "min_psa_price": min_psa_price,
-            "max_psa_price": max_psa_price,
-            "min_loose_price": min_loose_price,
-            "max_loose_price": max_loose_price,
-            "min_sales": min_sales,
-            "selected_years": selected_years,
-            "selected_sets": selected_sets
-        }
-        psa_trends.render_trends_page(filters)
-    except Exception as e:
-        st.error(f"An error occurred while rendering the PSA Trends page: {str(e)}")
