@@ -83,6 +83,17 @@ filtered_df['formatted-psa-10-price'] = filtered_df['psa-10-price'].apply(format
 filtered_df['formatted-market-cap'] = filtered_df['market-cap'].apply(format_currency)
 filtered_df['sales-volume'] = filtered_df['sales-volume'].apply(format_sales)
 
+# Column Renaming for Display
+column_rename_map = {
+    "product-name": "Card Name",
+    "console-name": "Set",
+    "formatted-loose-price": "Raw Price",
+    "formatted-psa-10-price": "PSA 10 Price",
+    "sales-volume": "Sales/Year",
+    "formatted-market-cap": "Market Cap",
+    "grading-profitability": "Grading Profitability"
+}
+
 # Main Dashboard
 st.markdown("<h1 style='text-align: center;'>CardMarketCap.App</h1>", unsafe_allow_html=True)
 selected_page = st.radio("Navigation", ["PSA Card Market Cap", "PSA Card Trends"], horizontal=True)
@@ -94,12 +105,12 @@ if selected_page == "PSA Card Market Cap":
     # 🔹 Top 20 Cards by Market Cap
     st.subheader("Top 20 Cards by Market Cap")
     top_market_cap = filtered_df.sort_values(by="market-cap", ascending=False).head(20)
-    st.dataframe(top_market_cap[['product-name', 'console-name', 'formatted-loose-price', 'formatted-psa-10-price', 'sales-volume', 'formatted-market-cap']])
+    st.dataframe(top_market_cap.rename(columns=column_rename_map)[column_rename_map.values()])
 
     # 🔹 Top 20 Cards by Profitability
     st.subheader("Top 20 Cards by Profitability")
     top_profitability = filtered_df.sort_values(by="grading-profitability", ascending=False).head(20)
-    st.dataframe(top_profitability[['product-name', 'console-name', 'formatted-loose-price', 'formatted-psa-10-price', 'sales-volume', 'grading-profitability']])
+    st.dataframe(top_profitability.rename(columns=column_rename_map)[column_rename_map.values()])
 
     # 🔹 Scatterplot: Loose Price vs PSA 10 Price
     st.subheader("Loose Price vs PSA 10 Graded Price")
