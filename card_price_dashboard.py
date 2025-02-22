@@ -40,7 +40,7 @@ df['product-url'] = df['id'].apply(lambda x: f"https://www.pricecharting.com/off
 # Sidebar Filters
 st.sidebar.header("Filters")
 
-# Add Search Bar for Card Names
+# 🔍 Search Bar for Card Names
 search_query = st.sidebar.text_input("Search for a card")
 
 min_psa_price = st.sidebar.number_input("Minimum PSA 10 Price ($)", min_value=0.0, value=0.0, step=1.0)
@@ -91,9 +91,30 @@ if selected_page == "PSA Card Market Cap":
     st.header("PSA 10 Card Market Cap Dashboard")
     st.metric("Total Cards", len(filtered_df))
 
-    # Display Data
+    # 🔹 Top 20 Cards by Market Cap
     st.subheader("Top 20 Cards by Market Cap")
-    st.dataframe(filtered_df.sort_values(by="market-cap", ascending=False).head(20))
+    top_market_cap = filtered_df.sort_values(by="market-cap", ascending=False).head(20)
+    st.dataframe(top_market_cap[['product-name', 'console-name', 'formatted-loose-price', 'formatted-psa-10-price', 'sales-volume', 'formatted-market-cap']])
+
+    # 🔹 Top 20 Cards by Profitability
+    st.subheader("Top 20 Cards by Profitability")
+    top_profitability = filtered_df.sort_values(by="grading-profitability", ascending=False).head(20)
+    st.dataframe(top_profitability[['product-name', 'console-name', 'formatted-loose-price', 'formatted-psa-10-price', 'sales-volume', 'grading-profitability']])
+
+    # 🔹 Scatterplot: Loose Price vs PSA 10 Price
+    st.subheader("Loose Price vs PSA 10 Graded Price")
+    scatter_fig = px.scatter(
+        filtered_df,
+        x="loose-price",
+        y="psa-10-price",
+        hover_name="product-name",
+        hover_data=["console-name", "product-url"],
+        title="Loose Price vs PSA 10 Graded Price",
+        labels={"loose-price": "Loose Price ($)", "psa-10-price": "PSA 10 Price ($)"},
+        template="plotly_white",
+    )
+    scatter_fig.update_traces(marker=dict(size=10, opacity=0.7))
+    st.plotly_chart(scatter_fig, use_container_width=True)
 
 elif selected_page == "PSA Card Trends":
     try:
